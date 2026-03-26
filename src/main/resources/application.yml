@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: fica-ci-bridge
+
+  # Disable Open Session In View — avoids lazy-loading surprises across the HTTP boundary
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Jackson: use ISO-8601 strings for all date/time types, never timestamps
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  # JAXB XML message converter — required for IDoc inbound and ALE acknowledgement responses
+  mvc:
+    converters:
+      preferred-json-mapper: jackson
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+logging:
+  level:
+    com.ficabridge: INFO
+    org.flywaydb: INFO

@@ -1,0 +1,32 @@
+spring:
+  # Datasource credentials are injected at runtime from the BTP PostgreSQL service binding.
+  # Spring Boot's CloudFoundryVcapEnvironmentPostProcessor exposes VCAP_SERVICES as
+  # vcap.services.{service-instance-name}.credentials.* properties automatically.
+  datasource:
+    url: ${vcap.services.postgresql.credentials.uri}
+    username: ${vcap.services.postgresql.credentials.username}
+    password: ${vcap.services.postgresql.credentials.password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      # Flyway owns the schema in all non-local environments
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  # XSUAA auth — spring-xsuaa reads the bound xsuaa service from VCAP_SERVICES.
+  # SecurityConfig activates JWT validation when the btp profile is active.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${vcap.services.xsuaa.credentials.url}/oauth/token
+
+logging:
+  level:
+    com.ficabridge: WARN
+    org.flywaydb: INFO
