@@ -1,0 +1,64 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Spring Boot
+*.jar
+*.war
+*.ear
+*.nar
+
+# Logs
+*.log
+logs/
+spring.log
+
+# Application secrets / local config
+application-local.yml
+application-local.properties
+application-btp.yml
+*.env
+.env
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Docker
+docker/postgres-data/
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
