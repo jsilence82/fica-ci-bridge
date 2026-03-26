@@ -1,0 +1,21 @@
+---
+applications:
+  - name: fica-ci-bridge
+    memory: 768M
+    instances: 1
+    path: target/fica-ci-bridge-0.0.1-SNAPSHOT.jar
+    buildpacks:
+      - java_buildpack
+    services:
+      - postgresql-ficabridge
+      - xsuaa-ficabridge
+      - connectivity-ficabridge
+    env:
+      SPRING_PROFILES_ACTIVE: btp
+      # Force the Java buildpack to use JRE 21
+      JBP_CONFIG_OPEN_JDK_JRE: '{ jre: { version: 21.+ } }'
+      # Cap heap at 75% of container memory; rest is for metaspace / off-heap
+      JAVA_OPTS: -XX:MaxRAMPercentage=75.0
+    health-check-type: http
+    health-check-http-endpoint: /actuator/health
+    timeout: 90
