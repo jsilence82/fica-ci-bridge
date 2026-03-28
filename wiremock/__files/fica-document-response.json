@@ -1,0 +1,34 @@
+{
+  "value": [
+    {
+      "FiCADocument": "0050001001",
+      "FiCADocumentItem": "0001",
+      "ContractAccount": "0000200001",
+      "BusinessPartner": "0000100001",
+      "DocumentDate": "20240315",
+      "PostingDate": "20240315",
+      "DueDate": "20240415",
+      "ClearingDate": "00000000",
+      "ClearingStatus": "OPEN",
+      "Amount": "143.40",
+      "Currency": "EUR",
+      "ConditionType": "ZREC",
+      "FiCADocumentType": "RV"
+    },
+    {
+      "FiCADocument": "0050001002",
+      "FiCADocumentItem": "0001",
+      "ContractAccount": "0000200001",
+      "BusinessPartner": "0000100001",
+      "DocumentDate": "20231215",
+      "PostingDate": "20231215",
+      "DueDate": "20240115",
+      "ClearingDate": "20240110",
+      "ClearingStatus": "CLEARED",
+      "Amount": "116.62",
+      "Currency": "EUR",
+      "ConditionType": "ZREC",
+      "FiCADocumentType": "RV"
+    }
+  ]
+}

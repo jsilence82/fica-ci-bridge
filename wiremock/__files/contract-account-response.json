@@ -1,0 +1,12 @@
+{
+  "ContractAccount": "0000200001",
+  "ContractAccountName": "Mustermann Energie GmbH",
+  "BusinessPartner": "0000100001",
+  "ContractAccountCategory": "MASS",
+  "AccountDeterminationCode": "0100",
+  "DunningProcedure": "Z001",
+  "IncomingPaymentMethod": "D",
+  "OutgoingPaymentMethod": "U",
+  "PaymentCondition": "ZB14",
+  "ClearingCategory": "0"
+}

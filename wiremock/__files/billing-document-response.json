@@ -1,0 +1,88 @@
+{
+  "value": [
+    {
+      "BillingDocument": "0090001001",
+      "BillingDocumentType": "ZREC",
+      "BillingDocumentDate": "20240315",
+      "BillingDocumentIsCancelled": false,
+      "CustomerNumber": "0000100001",
+      "ContractAccount": "0000200001",
+      "NetAmount": "120.50",
+      "TaxAmount": "22.90",
+      "TransactionCurrency": "EUR",
+      "PaymentDueDate": "20240415",
+      "ClearingDate": "00000000",
+      "ClearingStatus": "OPEN",
+      "to_BillingDocumentItem": {
+        "value": [
+          {
+            "BillingDocument": "0090001001",
+            "BillingDocumentItem": "000010",
+            "BillingDocumentItemText": "Electricity consumption Q1",
+            "Material": "ELEC-BASE",
+            "BillingQuantity": "350.000",
+            "BillingQuantityUnit": "KWH",
+            "NetAmount": "105.00",
+            "TaxAmount": "19.95",
+            "TransactionCurrency": "EUR",
+            "ChargingCategory": "USAGE"
+          },
+          {
+            "BillingDocument": "0090001001",
+            "BillingDocumentItem": "000020",
+            "BillingDocumentItemText": "Fixed network charge",
+            "Material": "ELEC-FIXED",
+            "BillingQuantity": "1.000",
+            "BillingQuantityUnit": "EA",
+            "NetAmount": "15.50",
+            "TaxAmount": "2.95",
+            "TransactionCurrency": "EUR",
+            "ChargingCategory": "FIXED"
+          }
+        ]
+      }
+    },
+    {
+      "BillingDocument": "0090001002",
+      "BillingDocumentType": "ZREC",
+      "BillingDocumentDate": "20231215",
+      "BillingDocumentIsCancelled": false,
+      "CustomerNumber": "0000100001",
+      "ContractAccount": "0000200001",
+      "NetAmount": "98.00",
+      "TaxAmount": "18.62",
+      "TransactionCurrency": "EUR",
+      "PaymentDueDate": "20240115",
+      "ClearingDate": "20240110",
+      "ClearingStatus": "CLEARED",
+      "to_BillingDocumentItem": {
+        "value": [
+          {
+            "BillingDocument": "0090001002",
+            "BillingDocumentItem": "000010",
+            "BillingDocumentItemText": "Electricity consumption Q4",
+            "Material": "ELEC-BASE",
+            "BillingQuantity": "280.000",
+            "BillingQuantityUnit": "KWH",
+            "NetAmount": "84.00",
+            "TaxAmount": "15.96",
+            "TransactionCurrency": "EUR",
+            "ChargingCategory": "USAGE"
+          },
+          {
+            "BillingDocument": "0090001002",
+            "BillingDocumentItem": "000020",
+            "BillingDocumentItemText": "Fixed network charge",
+            "Material": "ELEC-FIXED",
+            "BillingQuantity": "1.000",
+            "BillingQuantityUnit": "EA",
+            "NetAmount": "14.00",
+            "TaxAmount": "2.66",
+            "TransactionCurrency": "EUR",
+            "ChargingCategory": "FIXED"
+          }
+        ]
+      }
+    }
+  ]
+}

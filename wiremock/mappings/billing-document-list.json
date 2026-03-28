@@ -1,0 +1,23 @@
+{
+  "mappings": [
+    {
+      "name": "billing-document-list-by-contract-account",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/API_BILLING_DOCUMENT_SRV/BillingDocument",
+        "queryParameters": {
+          "$filter": {
+            "contains": "ContractAccount eq"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "billing-document-response.json"
+      }
+    }
+  ]
+}

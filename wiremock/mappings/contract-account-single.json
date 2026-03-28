@@ -1,0 +1,18 @@
+{
+  "mappings": [
+    {
+      "name": "contract-account-single-by-id",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/API_CA_CONTRACTACCOUNT/ContractAccount\\('[^']*'\\)"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "contract-account-response.json"
+      }
+    }
+  ]
+}
