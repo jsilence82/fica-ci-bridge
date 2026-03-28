@@ -4,22 +4,26 @@ This document describes the SAP S/4HANA OData APIs consumed by the FI-CA CI Brid
 All APIs are standard SAP published services available on the
 [SAP Business Accelerator Hub](https://api.sap.com).
 
+> **Locating APIs on the Hub:** Search by the API **name** listed below — not by a
+> technical API ID, as identifiers are subject to change between S/4HANA releases and
+> may not match what is listed in older documentation.
+
 ---
 
 ## Overview
 
-| API Name                                  | API ID                        | Protocol | Used For                            |
-|-------------------------------------------|-------------------------------|----------|-------------------------------------|
-| Contract Account (FI-CA)                  | `API_CA_CONTRACTACCOUNT`      | V4       | Contract account master data        |
-| FI-CA Document                            | `API_FICADOCUMENT`            | V4       | Posted FI-CA accounting documents   |
-| Convergent Invoicing – Billing Document   | `API_BILLING_DOCUMENT_SRV`    | V2/V4    | Billing document header + items     |
-| Business Partner                          | `API_BUSINESS_PARTNER`        | V2       | BP data linked to contract accounts |
+| API Name (search term on SAP Business Hub)              | Protocol | Used For                            |
+|---------------------------------------------------------|----------|-------------------------------------|
+| Contract Account (FI-CA)                                | V4       | Contract account master data        |
+| Contract Accounting Business Partner Invoice - Read     | V4       | Posted FI-CA accounting documents   |
+| Convergent Invoicing – Billing Document                 | V2/V4    | Billing document header + items     |
+| Business Partner                                        | V2       | BP data linked to contract accounts |
 
 Use V4 where available. Fall back to V2 only if V4 is not published for the target S/4HANA release.
 
 ---
 
-## API_CA_CONTRACTACCOUNT — Contract Account
+## Contract Account (FI-CA)
 
 **Entity set:** `ContractAccount`
 
@@ -46,7 +50,7 @@ GET /API_CA_CONTRACTACCOUNT/ContractAccount?$filter=BusinessPartner eq '00001000
 
 ---
 
-## API_FICADOCUMENT — FI-CA Document
+## Contract Accounting Business Partner Invoice - Read
 
 **Entity set:** `FiCADocument`
 
@@ -77,7 +81,7 @@ GET /API_FICADOCUMENT/FiCADocument?$filter=ContractAccount eq '0000200001' and C
 
 ---
 
-## API_BILLING_DOCUMENT_SRV — Billing Document
+## Convergent Invoicing – Billing Document
 
 **Entity set:** `BillingDocument`
 

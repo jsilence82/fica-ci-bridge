@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Raw OData response object for a single billing document line item
- * (API_BILLING_DOCUMENT_SRV / BillingDocumentItem entity set).
+ * Raw OData response object for a single billing document line item.
+ * Maps the {@code BillingDocumentItem} entity set from the
+ * Convergent Invoicing – Billing Document API.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ODataBillingLineItem {

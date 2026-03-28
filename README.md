@@ -11,10 +11,10 @@ and payment processors.
 
 ```
 S/4HANA OData V4 APIs
-  API_CA_CONTRACTACCOUNT
-  API_FICADOCUMENT
-  API_BILLING_DOCUMENT_SRV
-  API_BUSINESS_PARTNER
+  Contract Account (FI-CA)
+  Contract Accounting Business Partner Invoice - Read
+  Convergent Invoicing – Billing Document
+  Business Partner
           │
           │  HTTP (Basic Auth / OAuth2 via BTP XSUAA)
           ▼
@@ -52,15 +52,17 @@ No SAP system is required to build or run the project.
 
 ## SAP APIs Consumed
 
-| API Name                                  | API ID                        | Used For                            |
-|-------------------------------------------|-------------------------------|-------------------------------------|
-| Contract Account (FI-CA)                  | `API_CA_CONTRACTACCOUNT`      | Contract account master data        |
-| FI-CA Document                            | `API_FICADOCUMENT`            | Posted FI-CA accounting documents   |
-| Convergent Invoicing – Billing Document   | `API_BILLING_DOCUMENT_SRV`    | Billing document header + items     |
-| Business Partner                          | `API_BUSINESS_PARTNER`        | BP data linked to contract accounts |
+| API Name (search this on the Hub)                       | Used For                            |
+|---------------------------------------------------------|-------------------------------------|
+| Contract Account (FI-CA)                                | Contract account master data        |
+| Contract Accounting Business Partner Invoice - Read     | Posted FI-CA accounting documents   |
+| Convergent Invoicing – Billing Document                 | Billing document header + items     |
+| Business Partner                                        | BP data linked to contract accounts |
 
-All APIs are available on the [SAP Business Accelerator Hub](https://api.sap.com).
-Use V4 where available; fall back to V2 only if V4 is not published for the target API.
+> **Finding these APIs:** Search by the API name on the
+> [SAP Business Accelerator Hub](https://api.sap.com) — not by API ID, as IDs are subject
+> to change between S/4HANA releases. Use V4 where available; fall back to V2 only if V4
+> is not published for the target release.
 
 ---
 

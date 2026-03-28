@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * OData client for API_CA_CONTRACTACCOUNT (FI-CA contract account master data).
+ * OData client for the Contract Account (FI-CA) API.
  */
 @Component
 public class ContractAccountClient extends ODataClientBase {

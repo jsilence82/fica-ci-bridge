@@ -23,10 +23,10 @@ An optional PostgreSQL cache can be added to serve last-known data during SAP do
 ```
   SAP S/4HANA (FI-CA / Convergent Invoicing)
   ┌──────────────────────────────────────────┐
-  │  API_CA_CONTRACTACCOUNT                  │
-  │  API_FICADOCUMENT                        │
-  │  API_BILLING_DOCUMENT_SRV                │
-  │  API_BUSINESS_PARTNER                    │
+  │  Contract Account (FI-CA)                │
+  │  Contract Accounting BP Invoice - Read   │
+  │  Convergent Invoicing – Billing Document │
+  │  Business Partner                        │
   └────────────────────┬─────────────────────┘
                        │  HTTP GET + OData V4
                        │  ($filter / $select / $expand)

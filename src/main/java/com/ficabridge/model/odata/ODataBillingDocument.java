@@ -6,9 +6,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 /**
- * Raw OData response object for a Convergent Invoicing billing document
- * (API_BILLING_DOCUMENT_SRV / BillingDocument entity set).
- * Field names match the SAP OData V4 metadata exactly.
+ * Raw OData response object for a Convergent Invoicing billing document.
+ * Maps the {@code BillingDocument} entity set from the
+ * Convergent Invoicing – Billing Document API.
+ * Field names match the SAP OData metadata exactly.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ODataBillingDocument {
