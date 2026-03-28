@@ -1,20 +1,12 @@
 package com.ficabridge.transformer;
 
-import com.ficabridge.model.entity.ContractAccountEntity;
-import com.ficabridge.model.idoc.FiCaDocIDoc;
 import org.springframework.stereotype.Component;
 
 /**
- * Transforms a FI-CA document IDoc into a ContractAccountEntity.
+ * Transforms a FI-CA document OData response into a ContractAccountDTO.
+ * Input and output types will be wired in Step 2 / Step 4.
  */
 @Component
 public class FiCaDocTransformer {
-
-    /**
-     * Transform a parsed FiCaDocIDoc into a ContractAccountEntity ready for persistence.
-     * Handles: leading zero stripping and whitespace trimming on VKONT and GPART.
-     */
-    public ContractAccountEntity transform(FiCaDocIDoc idoc) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
+    // transform(ODataFicaDocument) → FicaDocumentDTO  — implemented in Step 4
 }
