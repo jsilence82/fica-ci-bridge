@@ -4,8 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Raw OData response object for a FI-CA contract account
- * (API_CA_CONTRACTACCOUNT / ContractAccount entity set).
+ * Raw OData response object for a FI-CA contract account.
+ * Maps the {@code ContractAccount} entity set from the
+ * Contract Account (FI-CA) API.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ODataContractAccount {

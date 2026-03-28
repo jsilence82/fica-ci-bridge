@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.List;
 
 /**
- * OData client for API_BILLING_DOCUMENT_SRV (Convergent Invoicing billing documents).
+ * OData client for the Convergent Invoicing – Billing Document API.
  */
 @Component
 public class BillingDocumentClient extends ODataClientBase {

@@ -10,7 +10,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.List;
 
 /**
- * OData client for API_FICADOCUMENT (posted FI-CA accounting documents / open items).
+ * OData client for the Contract Accounting Business Partner Invoice - Read API
+ * (posted FI-CA accounting documents / open items).
  */
 @Component
 public class FicaDocumentClient extends ODataClientBase {
