@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class InvoiceDTO {
@@ -19,4 +20,5 @@ public class InvoiceDTO {
     private LocalDate clearingDate;
     private String ficaDocNumber;
     private String idocDocnum;
+    private List<InvoiceLineItemDTO> lineItems;
 }
