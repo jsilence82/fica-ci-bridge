@@ -1,17 +1,23 @@
 package com.ficabridge.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Jackson ObjectMapper configuration: date serialization, null handling, etc.
+ * Jackson ObjectMapper configuration: ISO-8601 date strings, tolerant deserialization.
  */
 @Configuration
 public class JacksonConfig {
 
     @Bean
     public ObjectMapper objectMapper() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 }

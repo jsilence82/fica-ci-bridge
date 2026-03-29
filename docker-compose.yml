@@ -16,6 +16,21 @@ services:
       retries: 5
       start_period: 10s
 
+  wiremock:
+    image: wiremock/wiremock:latest
+    ports:
+      - "8089:8080"
+    volumes:
+      - ./wiremock/mappings:/home/wiremock/mappings
+      - ./wiremock/__files:/home/wiremock/__files
+    command: ["--global-response-templating", "--verbose"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/__admin/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   app:
     build: .
     ports:
@@ -27,8 +42,13 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ficabridge
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
+      SAP_ODATA_BASE_URL: http://wiremock:8080
+      SAP_ODATA_USERNAME: wiremock
+      SAP_ODATA_PASSWORD: wiremock
     depends_on:
       postgres:
+        condition: service_healthy
+      wiremock:
         condition: service_healthy
 
 volumes:

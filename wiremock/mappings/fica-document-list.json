@@ -1,0 +1,23 @@
+{
+  "mappings": [
+    {
+      "name": "fica-document-list-by-contract-account",
+      "request": {
+        "method": "GET",
+        "urlPathPattern": "/API_FICADOCUMENT/FiCADocument",
+        "queryParameters": {
+          "$filter": {
+            "contains": "ContractAccount eq"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyFileName": "fica-document-response.json"
+      }
+    }
+  ]
+}

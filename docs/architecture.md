@@ -8,13 +8,13 @@ conventions, and data encoding quirks — and modern REST consumers that should 
 know what an `AUGST` or `VKONT` is.
 
 Without the ACL, consumers would be forced to:
-- Understand SAP IDoc XML structure and segment names
-- Handle SAP-specific data quirks (leading zeros, zero dates, YYYYMMDD strings)
-- Couple their release cycles to SAP change transports
+- Understand SAP OData V4 entity sets and SAP-specific query parameters
+- Handle SAP-specific data quirks (leading zeros, zero dates, YYYYMMDD strings, sign conventions)
+- Couple their release cycles to SAP API changes
 - Fail entirely when SAP is unavailable
 
-With the ACL, consumers get a stable, versioned REST/JSON API backed by a local PostgreSQL store
-that survives SAP downtime.
+With the ACL, consumers get a stable, versioned REST/JSON API that abstracts all SAP details.
+An optional PostgreSQL cache can be added to serve last-known data during SAP downtime.
 
 ---
 
@@ -23,57 +23,55 @@ that survives SAP downtime.
 ```
   SAP S/4HANA (FI-CA / Convergent Invoicing)
   ┌──────────────────────────────────────────┐
-  │  Billing document posted or cleared      │
-  │  → ALE framework dispatches IDoc         │
-  │  → HTTP POST to bridge inbound endpoint  │
+  │  Contract Account (FI-CA)                │
+  │  Contract Accounting BP Invoice - Read   │
+  │  Convergent Invoicing – Billing Document │
+  │  Business Partner                        │
   └────────────────────┬─────────────────────┘
-                       │  POST /api/idoc/billing
-                       │  Content-Type: application/xml
-                       │  Body: INVOIC IDoc XML (EDI_DC40 + E1INVDO + E1INVIO)
+                       │  HTTP GET + OData V4
+                       │  ($filter / $select / $expand)
                        │
                        ▼
   ┌───────────────────────────────────────────────────────────┐
   │                  FI-CA CI Bridge                          │
   │                                                           │
   │  ┌─────────────────────────────────────────────────────┐  │
-  │  │  IDocInboundController  POST /api/idoc/billing      │  │
-  │  │  • Deserialises IDoc XML via JAXB                   │  │
-  │  │  • Delegates to IdocProcessingService               │  │
-  │  │  • Returns AleAcknowledgementDTO as XML             │  │
+  │  │  OData Client Layer  (client/)                      │  │
+  │  │  BillingDocumentClient                              │  │
+  │  │  ContractAccountClient                              │  │
+  │  │  FicaDocumentClient                                 │  │
+  │  │  • Shared $filter/$expand logic in ODataClientBase  │  │
+  │  │  • Wraps 4xx/5xx into ODataClientException          │  │
+  │  │  • Handles both V2 and V4 response envelopes        │  │
   │  └──────────────────────────┬──────────────────────────┘  │
-  │                             │                             │
+  │                             │  Raw ODataXxx objects        │
   │  ┌──────────────────────────▼──────────────────────────┐  │
-  │  │  IdocProcessingService                              │  │
-  │  │  • Idempotency check on EDI_DC40.DOCNUM             │  │
-  │  │  • Duplicate IDocs are acknowledged without         │  │
-  │  │    reprocessing (SAP ALE retries on missing ack)    │  │
-  │  └──────────────────────────┬──────────────────────────┘  │
-  │                             │                             │
-  │  ┌──────────────────────────▼──────────────────────────┐  │
-  │  │  BillingDocTransformer                              │  │
-  │  │  • Strips leading zeros from VBELN, GPART, VKONT   │  │
+  │  │  Transformer Layer  (transformer/)                  │  │
+  │  │  • Strips leading zeros from VKONT, GPART, OPBEL   │  │
   │  │  • Parses YYYYMMDD dates; maps 00000000 → null      │  │
-  │  │  • Maps AUGST → InvoiceStatus enum                  │  │
+  │  │  • Maps AUGST/ClearingStatus → domain status        │  │
   │  │  • Derives OVERDUE when OPEN + due date in past     │  │
   │  │  • Maps KSCHL condition type → charge type label    │  │
   │  │  • Trims all SAP whitespace-padded string fields    │  │
   │  └──────────────────────────┬──────────────────────────┘  │
-  │                             │                             │
+  │                             │  Clean domain DTOs only      │
+  │      (no OData types cross this boundary)                 │
   │  ┌──────────────────────────▼──────────────────────────┐  │
-  │  │  InvoiceService  →  InvoiceRepository               │  │
-  │  │  Persists InvoiceEntity + InvoiceLineItemEntity      │  │
+  │  │  Service Layer  (service/)                          │  │
+  │  │  • Input-agnostic orchestration                     │  │
+  │  │  • No imports from client/ or model/odata/          │  │
+  │  │  • Optional: persist via JPA repository             │  │
   │  └──────────────────────────┬──────────────────────────┘  │
   │                             │                             │
   │  ┌──────────────────────────▼──────────────────────────┐  │
-  │  │  PostgreSQL 16                                       │  │
-  │  │  Tables: invoices, invoice_line_items,              │  │
-  │  │          contract_accounts                          │  │
-  │  │  Schema owned by Flyway migrations                  │  │
+  │  │  REST Controllers  (controller/)                    │  │
+  │  │  GET /api/invoices                                  │  │
+  │  │  GET /api/contract-accounts/{vkont}                 │  │
+  │  │  GET /api/payments                                  │  │
   │  └─────────────────────────────────────────────────────┘  │
   └───────────────────────────────┬───────────────────────────┘
-                                  │
                                   │  Clean REST / JSON API
-                                  │  No SAP field names, no IDoc concepts
+                                  │  No SAP field names
                                   │
            ┌──────────────────────┼──────────────────────┐
            │                      │                      │
@@ -84,14 +82,18 @@ that survives SAP downtime.
 
 ---
 
-## Inbound Endpoint
+## The Source-Adapter Boundary
 
-| Method | Path | Consumes | Produces |
-|--------|------|----------|----------|
-| POST | `/api/idoc/billing` | `application/xml` | `application/xml` |
+**The service layer has no knowledge of where data came from.**
 
-SAP ALE posts the IDoc and expects an `ALEAUD01` XML acknowledgement in response. If it
-does not receive one it will retry according to the partner profile retry schedule.
+Nothing in `service/`, `controller/`, `model/dto/`, or `model/entity/` may import from
+`client/` or `model/odata/`. This boundary is enforced by package structure and verified in
+code review.
+
+The practical consequence: the entire OData client stack can be replaced with a different
+source adapter — an IDoc/ALE listener, an SAP Event Mesh consumer, a direct BAPI call —
+without changing a single service, controller, or DTO class. The adapter just needs to
+produce the same domain DTOs.
 
 ---
 
@@ -99,33 +101,38 @@ does not receive one it will retry according to the partner profile retry schedu
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/invoices` | List invoices; filterable by `status` and `contractAccount` |
-| GET | `/api/invoices/{billingDocNumber}` | Single invoice by billing document number |
-| GET | `/api/contract-accounts/{contractAccount}` | Contract account with all related invoices |
-| GET | `/api/contract-accounts/overdue` | All contract accounts carrying overdue items |
+| GET | `/api/invoices` | List billing documents; filterable by contract account |
+| GET | `/api/invoices/{billingDocument}` | Single billing document with line items |
+| GET | `/api/contract-accounts/{vkont}` | Contract account master data |
+| GET | `/api/payments` | Open FI-CA items (receivables) |
 
 ---
 
 ## Key Design Decisions
 
-### Idempotency
-Every inbound IDoc carries a unique `DOCNUM` in the `EDI_DC40` control record. The bridge
-checks this before processing. If the document already exists it logs a warning and returns
-a success acknowledgement — SAP gets its ack, no duplicate data is created.
+### ODataClientBase
+All OData calls go through `ODataClientBase`. It handles:
+- `$filter`, `$select`, `$expand` query parameter construction
+- CSRF token fetch (required for any POST/PATCH to SAP OData)
+- 4xx/5xx error wrapping into `ODataClientException`
+- Response deserialization via `ODataWrapper<T>` (handles both V2 and V4 envelopes)
 
-### Resilience to SAP downtime
-Because all data is persisted locally, consumer-facing APIs continue to serve the last-known
-state even when SAP is unavailable. This is a core advantage over direct OData/RFC calls from
-consumers.
+### ODataWrapper
+SAP OData V2 responses wrap results in `{ "d": { "results": [] } }`.
+OData V4 responses use `{ "value": [] }`. The `ODataWrapper` class handles both.
+Always check which version the specific API returns before deserializing.
 
 ### No SAP concepts in the API
 Field names like `VKONT`, `AUGST`, `KSCHL`, and `GPART` never appear in REST responses.
-The transformer layer is responsible for 100% of the translation. Consumers are entirely
-decoupled from the SAP data model.
+The transformer layer is responsible for 100% of the translation.
 
 ### Flyway owns the schema
 `spring.jpa.hibernate.ddl-auto=validate` in all environments. Hibernate validates but never
 modifies the schema. All DDL changes go through versioned Flyway scripts.
+
+### WireMock as SAP stub
+In local and test environments, WireMock stubs the SAP OData endpoints so the project runs
+without SAP infrastructure. Stubs live in `wiremock/mappings/` and `wiremock/__files/`.
 
 ---
 
@@ -133,8 +140,9 @@ modifies the schema. All DDL changes go through versioned Flyway scripts.
 
 | Concern | Choice | Rationale |
 |---------|--------|-----------|
-| XML parsing | JAXB | Standard Java XML binding; JAXB annotations map directly to IDoc segment structure |
+| SAP connectivity | Spring WebClient + OData V4 | Standard HTTP; no JCo/RFC dependencies; testable with WireMock |
 | DTO mapping | MapStruct | Compile-time generated; faster than reflection-based mappers; errors at build time |
 | Schema migrations | Flyway | Versioned, auditable DDL; prevents accidental schema drift |
 | Auth (BTP) | SAP XSUAA | Native BTP identity provider; integrates with SAP's role concept |
 | Deployment | BTP Cloud Foundry | Co-located with SAP SaaS services; access to BTP Connectivity for on-premise tunnel |
+| Local SAP stub | WireMock | Realistic HTTP stubbing; stubs double as integration test fixtures |
