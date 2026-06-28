@@ -14,20 +14,19 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/contract-accounts")
 @RequiredArgsConstructor
-@SuppressWarnings("unused") // fields used via Lombok constructor injection; methods are stubs
 public class ContractAccountController {
 
     private final ContractAccountService contractAccountService;
 
+    /** GET /api/contract-accounts/overdue — must be declared before /{contractAccount} */
+    @GetMapping("/overdue")
+    public ResponseEntity<List<ContractAccountDTO>> getOverdue() {
+        return ResponseEntity.ok(contractAccountService.getAllWithOverdueItems());
+    }
+
     /** GET /api/contract-accounts/{contractAccount} */
     @GetMapping("/{contractAccount}")
     public ResponseEntity<ContractAccountDTO> getContractAccount(@PathVariable String contractAccount) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    /** GET /api/contract-accounts/overdue */
-    @GetMapping("/overdue")
-    public ResponseEntity<List<ContractAccountDTO>> getOverdue() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return ResponseEntity.ok(contractAccountService.getByContractAccount(contractAccount));
     }
 }
