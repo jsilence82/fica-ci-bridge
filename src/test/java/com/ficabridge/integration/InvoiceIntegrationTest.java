@@ -13,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -152,7 +151,6 @@ class InvoiceIntegrationTest {
         e.setAmount(new BigDecimal(amount));
         e.setCurrency(currency);
         e.setDueDate(dueDate);
-        e.setCreatedAt(LocalDateTime.now());
         return e;
     }
 }

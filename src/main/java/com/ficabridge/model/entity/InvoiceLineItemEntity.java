@@ -19,20 +19,26 @@ public class InvoiceLineItemEntity {
     private InvoiceEntity invoice;
 
     @Column(nullable = false)
-    private String lineItemNumber;       // E1INVIO.POSNR
+    private String itemNumber;
 
-    @Column(nullable = false, length = 10)
-    private String conditionType;        // E1INVIO.KSCHL, e.g. ZCI1, ZCI2, ZTAX
+    private String description;
 
-    private String chargeType;           // Human-readable label derived from KSCHL
+    private String material;
 
-    private String taxCode;              // E1INVIO.MWSKZ
+    @Column(precision = 19, scale = 3)
+    private BigDecimal quantity;
 
-    @Column(precision = 19, scale = 2)
-    private BigDecimal taxBaseAmount;    // E1INVIO.HWBAS
-
-    private String taxJurisdictionCode;  // E1INVIO.TXJCD
+    private String quantityUnit;
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal amount;           // E1INVIO.BETRW
+    private BigDecimal netAmount;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal taxAmount;
+
+    @Column(length = 5)
+    private String currency;
+
+    @Column(length = 10)
+    private String chargingCategory;
 }

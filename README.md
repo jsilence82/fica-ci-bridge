@@ -159,16 +159,11 @@ See [docs/btp-deployment.md](docs/btp-deployment.md) for full deployment instruc
 | 4 — OData client layer | `ODataClientBase` (shared `$filter`/`$expand`/`$select`, V2 + V4 envelope handling, 4xx/5xx wrapping), `BillingDocumentClient`, `ContractAccountClient`, `FicaDocumentClient` | 27 WireMock unit tests |
 | 5 — Service layer | `InvoiceService`, `ContractAccountService`, `OpenItemService` — repository-backed, no OData imports, `ResourceNotFoundException` on missing records | 27 unit tests (Mockito) |
 | 6 — REST controllers | `InvoiceController` (`GET /api/invoices`, `GET /api/invoices/{id}`), `ContractAccountController` (`GET /api/contract-accounts/{vkont}`, `GET /api/contract-accounts/overdue`), `PaymentController` (`GET /api/payments`) | 18 MockMvc tests |
+| 7 — Integration tests | `@SpringBootTest` + `TestRestTemplate` seeding H2 directly; covers all REST routing combinations, 404 propagation, open-item filtering | 14 tests |
+| 8 — Exception handling | `ErrorResponse` record (`timestamp`, `status`, `error`, `message`); `MethodArgumentTypeMismatchException` → 400; generic handler no longer leaks internal messages | 6 MockMvc tests |
+| 9 — Flyway + entity/cache layer | V1–V3 migrations; `InvoiceLineItemEntity` realigned to OData DTO fields; `@PrePersist` on `InvoiceEntity`; `InvoiceMapper` line-item mapping wired; `FlywayMigrationTest` validates migrations + schema | 11 tests |
 
-**Total: 121 tests passing, 0 failures.**
-
-### Remaining
-
-| Step | Layer |
-|------|-------|
-| 7 | WireMock stub files + end-to-end integration tests |
-| 8 | Exception handling polish (`GlobalExceptionHandler` refinement) |
-| 9 | Flyway migrations + entity/repository cache wiring |
+**Total: 152 tests passing, 0 failures. All 9 steps complete.**
 
 ---
 
