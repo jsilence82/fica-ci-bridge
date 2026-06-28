@@ -16,22 +16,35 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/invoices")
 @RequiredArgsConstructor
-@SuppressWarnings("unused") // fields used via Lombok constructor injection; methods are stubs
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
 
-    /** GET /api/invoices?status=OPEN&contractAccount=100000789 */
+    /**
+     * GET /api/invoices
+     * Optional query params: contractAccount, status (combinable).
+     */
     @GetMapping
     public ResponseEntity<List<InvoiceDTO>> getInvoices(
             @RequestParam(required = false) InvoiceStatus status,
             @RequestParam(required = false) String contractAccount) {
-        throw new UnsupportedOperationException("Not yet implemented");
+
+        List<InvoiceDTO> result;
+        if (contractAccount != null && status != null) {
+            result = invoiceService.getByContractAccountAndStatus(contractAccount, status);
+        } else if (contractAccount != null) {
+            result = invoiceService.getByContractAccount(contractAccount);
+        } else if (status != null) {
+            result = invoiceService.getByStatus(status);
+        } else {
+            result = invoiceService.getAll();
+        }
+        return ResponseEntity.ok(result);
     }
 
     /** GET /api/invoices/{billingDocNumber} */
     @GetMapping("/{billingDocNumber}")
     public ResponseEntity<InvoiceDTO> getInvoice(@PathVariable String billingDocNumber) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return ResponseEntity.ok(invoiceService.getByBillingDocNumber(billingDocNumber));
     }
 }
