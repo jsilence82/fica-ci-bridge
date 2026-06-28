@@ -55,7 +55,7 @@ class ContractAccountControllerTest {
 
         mockMvc.perform(get("/api/contract-accounts/UNKNOWN"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", containsString("UNKNOWN")));
+                .andExpect(jsonPath("$.message", containsString("UNKNOWN")));
     }
 
     @Test

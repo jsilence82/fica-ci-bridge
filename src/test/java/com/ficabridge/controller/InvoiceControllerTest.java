@@ -138,7 +138,7 @@ class InvoiceControllerTest {
 
         mockMvc.perform(get("/api/invoices/UNKNOWN"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.error", containsString("UNKNOWN")));
+                .andExpect(jsonPath("$.message", containsString("UNKNOWN")));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
