@@ -147,6 +147,31 @@ See [docs/btp-deployment.md](docs/btp-deployment.md) for full deployment instruc
 
 ---
 
+## Implementation Status
+
+### Complete ✅
+
+| Step | Layer | Tests |
+|------|-------|-------|
+| 1 — OData model classes | `ODataWrapper<T>`, `ODataBillingDocument` + line items, `ODataFicaDocument`, `ODataContractAccount` | Covered by transformer tests |
+| 2 — TransformerUtils | `parseSapDate`, `stripLeadingZeros`, `parseSapAmount`, `trimSapString` | 22 unit tests |
+| 3 — Transformer layer | `BillingDocTransformer`, `FiCaDocTransformer`, `ContractAccountTransformer` — SAP field names, amounts, dates, status derivation | 26 unit tests |
+| 4 — OData client layer | `ODataClientBase` (shared `$filter`/`$expand`/`$select`, V2 + V4 envelope handling, 4xx/5xx wrapping), `BillingDocumentClient`, `ContractAccountClient`, `FicaDocumentClient` | 27 WireMock unit tests |
+| 5 — Service layer | `InvoiceService`, `ContractAccountService`, `OpenItemService` — repository-backed, no OData imports, `ResourceNotFoundException` on missing records | 27 unit tests (Mockito) |
+
+**Total: 103 tests passing, 0 failures.**
+
+### Remaining
+
+| Step | Layer |
+|------|-------|
+| 6 | REST controllers (`InvoiceController`, `ContractAccountController`, `PaymentController`) |
+| 7 | WireMock stub files + end-to-end integration tests |
+| 8 | Exception handling polish (`GlobalExceptionHandler` refinement) |
+| 9 | Flyway migrations + entity/repository cache wiring |
+
+---
+
 ## Project Structure
 
 ```

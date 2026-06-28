@@ -1,9 +1,10 @@
 package com.ficabridge.service;
 
+import com.ficabridge.exception.ResourceNotFoundException;
+import com.ficabridge.mapper.InvoiceMapper;
 import com.ficabridge.model.dto.InvoiceDTO;
 import com.ficabridge.model.dto.InvoiceStatus;
 import com.ficabridge.model.entity.InvoiceEntity;
-import com.ficabridge.mapper.InvoiceMapper;
 import com.ficabridge.repository.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,37 +13,38 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@SuppressWarnings("unused") // fields used via Lombok constructor injection; methods are stubs
 public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final InvoiceMapper invoiceMapper;
 
     public InvoiceDTO getByBillingDocNumber(String billingDocNumber) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        InvoiceEntity entity = invoiceRepository.findByBillingDocNumber(billingDocNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found: " + billingDocNumber));
+        return invoiceMapper.toDto(entity);
     }
 
     public List<InvoiceDTO> getAll() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return invoiceMapper.toDtoList(invoiceRepository.findAll());
     }
 
     public List<InvoiceDTO> getByContractAccount(String contractAccount) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return invoiceMapper.toDtoList(invoiceRepository.findByContractAccount(contractAccount));
     }
 
     public List<InvoiceDTO> getByStatus(InvoiceStatus status) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return invoiceMapper.toDtoList(invoiceRepository.findByStatus(status));
     }
 
     public List<InvoiceDTO> getByContractAccountAndStatus(String contractAccount, InvoiceStatus status) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return invoiceMapper.toDtoList(invoiceRepository.findByContractAccountAndStatus(contractAccount, status));
     }
 
     public InvoiceEntity save(InvoiceEntity entity) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return invoiceRepository.save(entity);
     }
 
     public boolean existsByIdocDocnum(String idocDocnum) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return invoiceRepository.existsByIdocDocnum(idocDocnum);
     }
 }
