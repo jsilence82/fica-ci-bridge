@@ -1,10 +1,10 @@
 {
   "mappings": [
     {
-      "name": "billing-document-list-by-contract-account",
+      "name": "ca-invoicing-document-list-by-contract-account",
       "request": {
         "method": "GET",
-        "urlPathPattern": "/API_BILLING_DOCUMENT_SRV/BillingDocument",
+        "urlPathPattern": "/sap/opu/odata4/sap/api_cainvoicingdocument/srvd_a2x/sap/cainvoicingdocument/0001/CAInvcgDocument",
         "queryParameters": {
           "$filter": {
             "contains": "ContractAccount eq"

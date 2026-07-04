@@ -10,23 +10,25 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.util.List;
 
 /**
- * OData client for the Convergent Invoicing – Billing Document API.
+ * OData V4 client for the FI-CA Convergent Invoicing – Invoicing Document API
+ * (API_CAINVOICINGDOCUMENT). Entity set: CAInvcgDocument.
  */
 @Component
 public class BillingDocumentClient extends ODataClientBase {
 
-    private static final String BASE_PATH = "/API_BILLING_DOCUMENT_SRV/BillingDocument";
-    private static final String EXPAND_ITEMS = "to_BillingDocumentItem";
+    private static final String BASE_PATH =
+            "/sap/opu/odata4/sap/api_cainvoicingdocument/srvd_a2x/sap/cainvoicingdocument/0001/CAInvcgDocument";
+    private static final String EXPAND_ITEMS = "_CAInvcgDocItem";
 
     public BillingDocumentClient(WebClient sapODataWebClient, ObjectMapper objectMapper) {
         super(sapODataWebClient, objectMapper);
     }
 
     /**
-     * Fetch all billing documents for the given contract account number.
+     * Fetch all invoicing documents for the given contract account.
      *
-     * @param contractAccount VKONT value (leading zeros stripped by caller if needed)
-     * @return list of billing documents with line items expanded
+     * @param contractAccount contract account number (zero-padding optional)
+     * @return list of invoicing documents with items expanded
      */
     public List<ODataBillingDocument> findByContractAccount(String contractAccount) {
         String filter = "ContractAccount eq '" + contractAccount + "'";
@@ -35,13 +37,13 @@ public class BillingDocumentClient extends ODataClientBase {
     }
 
     /**
-     * Fetch a single billing document by its document number, with line items expanded.
+     * Fetch a single invoicing document by its document number, with items expanded.
      *
-     * @param billingDocument billing document number
-     * @return billing document, or {@code null} if not found
+     * @param caInvoicingDocument the CAInvoicingDocument key value
+     * @return invoicing document, or {@code null} if not found
      */
-    public ODataBillingDocument findById(String billingDocument) {
-        String path = BASE_PATH + "('" + billingDocument + "')";
+    public ODataBillingDocument findById(String caInvoicingDocument) {
+        String path = BASE_PATH + "(CAInvoicingDocument='" + caInvoicingDocument + "')";
         return fetchSingle(path, EXPAND_ITEMS, ODataBillingDocument.class);
     }
 }

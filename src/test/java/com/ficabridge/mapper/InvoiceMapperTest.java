@@ -36,6 +36,7 @@ class InvoiceMapperTest {
         assertThat(dto.getAmount()).isEqualByComparingTo("143.40");
         assertThat(dto.getCurrency()).isEqualTo("EUR");
         assertThat(dto.getDueDate()).isEqualTo(LocalDate.of(2025, 6, 1));
+        assertThat(dto.getOfficialDocumentNumber()).isEqualTo("ODN2025001001");
     }
 
     @Test
@@ -87,11 +88,13 @@ class InvoiceMapperTest {
         dto.setStatus(InvoiceStatus.CLEARED);
         dto.setAmount(new BigDecimal("98.00"));
         dto.setCurrency("EUR");
+        dto.setOfficialDocumentNumber("ODN2025001001");
 
         InvoiceEntity entity = invoiceMapper.toEntity(dto);
 
         assertThat(entity.getBillingDocNumber()).isEqualTo("90001001");
         assertThat(entity.getStatus()).isEqualTo(InvoiceStatus.CLEARED);
+        assertThat(entity.getOfficialDocumentNumber()).isEqualTo("ODN2025001001");
         assertThat(entity.getId()).isNull();
         assertThat(entity.getCreatedAt()).isNull();
         assertThat(entity.getLineItems()).isNull();
@@ -147,6 +150,7 @@ class InvoiceMapperTest {
         e.setCurrency("EUR");
         e.setDueDate(LocalDate.of(2025, 6, 1));
         e.setCreatedAt(LocalDateTime.now());
+        e.setOfficialDocumentNumber("ODN2025001001");
         return e;
     }
 
