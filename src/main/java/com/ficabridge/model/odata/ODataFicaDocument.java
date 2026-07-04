@@ -5,8 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Raw OData response object for a posted FI-CA accounting document.
- * Maps the {@code FiCADocument} entity set from the
- * Contract Accounting Business Partner Invoice - Read API.
+ * Maps the {@code FiCADocument} entity set from API_FICADOCUMENT.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ODataFicaDocument {
