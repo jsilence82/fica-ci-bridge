@@ -67,9 +67,6 @@ No SAP system is required to build or run the project.
 > **Finding these APIs:** Search by the API name on the
 > [SAP Business Accelerator Hub](https://api.sap.com). Use V4 where available; fall back
 > to V2 only if V4 is not published for the target release.
->
-> **Important:** Use `API_CAINVOICINGDOCUMENT` for FI-CA Convergent Invoicing — **not**
-> `API_BILLING_DOCUMENT_SRV`, which is the SD billing API (OData V2, different entity structure).
 
 ---
 
@@ -183,27 +180,6 @@ intentionally out of scope and would need to be addressed before any real deploy
 | **`clearingDate` always null** | `InvoiceDTO.clearingDate` is never populated — requires `API_CABUSPARTINVOICE` item-level clearing data |
 | **`idocDocnum` artifact** | `InvoiceEntity` carries an IDoc deduplication field that has no natural value in an OData-sourced system |
 | **CSRF token not fetched** | Required before any mutation is introduced; deferred because the bridge is currently read-only |
-
----
-
-## Implementation Status
-
-### Complete ✅
-
-| Step | Layer | Tests |
-|------|-------|-------|
-| 1 — OData model classes | `ODataWrapper<T>`, `ODataBillingDocument` (maps `CAInvcgDocument`), `ODataBillingLineItem` (maps `CAInvcgDocItem`), `ODataFicaDocument`, `ODataContractAccount` | Covered by transformer tests |
-| 2 — TransformerUtils | `parseSapDate`, `stripLeadingZeros`, `parseSapAmount`, `trimSapString` | 22 unit tests |
-| 3 — Transformer layer | `BillingDocTransformer`, `FiCaDocTransformer`, `ContractAccountTransformer` — SAP field names, amounts, dates, status derivation | 26 unit tests |
-| 4 — OData client layer | `ODataClientBase` (shared `$filter`/`$expand`/`$select`, V2 + V4 envelope handling, 4xx/5xx wrapping), `BillingDocumentClient` (`API_CAINVOICINGDOCUMENT`), `ContractAccountClient`, `FicaDocumentClient` | 27 WireMock unit tests |
-| 5 — Service layer | `InvoiceService`, `ContractAccountService`, `OpenItemService` — repository-backed, no OData imports, `ResourceNotFoundException` on missing records | 27 unit tests (Mockito) |
-| 6 — REST controllers | `InvoiceController` (`GET /api/invoices`, `GET /api/invoices/{id}`), `ContractAccountController` (`GET /api/contract-accounts/{vkont}`, `GET /api/contract-accounts/overdue`), `PaymentController` (`GET /api/payments`) | 18 MockMvc tests |
-| 7 — Integration tests | `@SpringBootTest` + `TestRestTemplate` seeding H2 directly; covers all REST routing combinations, 404 propagation, open-item filtering | 14 tests |
-| 8 — Exception handling | `ErrorResponse` record (`timestamp`, `status`, `error`, `message`); `MethodArgumentTypeMismatchException` → 400; generic handler no longer leaks internal messages | 6 MockMvc tests |
-| 9 — Flyway + entity/cache layer | V1–V4 migrations; `InvoiceLineItemEntity` realigned to OData DTO fields; `@PrePersist` on `InvoiceEntity`; `InvoiceMapper` line-item mapping wired; `FlywayMigrationTest` validates migrations + schema | 11 tests |
-| API correction + ODN | Source adapter updated from `API_BILLING_DOCUMENT_SRV` → `API_CAINVOICINGDOCUMENT`; `CAOfficialDocumentNumber` → `officialDocumentNumber` added to DTO, entity, and migration V4 | Tests updated in-place |
-
-**Total: 152 tests passing, 0 failures. All 9 steps complete + API correction applied.**
 
 ---
 
