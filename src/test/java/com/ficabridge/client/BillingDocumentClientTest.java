@@ -21,6 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @WireMockTest
 class BillingDocumentClientTest {
 
+    private static final String BASE_PATH =
+            "/sap/opu/odata4/sap/api_cainvoicingdocument/srvd_a2x/sap/cainvoicingdocument/0001/CAInvcgDocument";
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
@@ -44,23 +47,24 @@ class BillingDocumentClientTest {
                 {
                   "value": [
                     {
-                      "BillingDocument": "0090001234",
+                      "CAInvoicingDocument": "000090001234",
                       "ContractAccount": "0000100200",
-                      "CustomerNumber": "0000005678",
-                      "NetAmount": "1250.00",
+                      "BusinessPartner": "0000005678",
+                      "CAAmountInTransactionCurrency": "1250.00",
                       "TransactionCurrency": "EUR",
-                      "PaymentDueDate": "20240415",
-                      "BillingDocumentIsCancelled": false,
-                      "to_BillingDocumentItem": {
+                      "CANetDueDate": "2024-04-15",
+                      "CAOfficialDocumentNumber": "ODN2024001234",
+                      "CAInvcgReversalDocument": "",
+                      "_CAInvcgDocItem": {
                         "value": [
                           {
-                            "BillingDocument": "0090001234",
-                            "BillingDocumentItem": "000010",
-                            "BillingDocumentItemText": "Energy charge",
-                            "NetAmount": "980.00",
-                            "TaxAmount": "98.00",
+                            "CAInvoicingDocument": "000090001234",
+                            "CAInvcgDocItem": "00000001",
+                            "CAAmountInTransactionCurrency": "980.00",
+                            "CATaxAmountInTransCurrency": "98.00",
                             "TransactionCurrency": "EUR",
-                            "ChargingCategory": "ENERGY"
+                            "CAConditionType": "USAG",
+                            "CAClearingDocumentNumber": ""
                           }
                         ]
                       }
@@ -69,23 +73,24 @@ class BillingDocumentClientTest {
                 }
                 """;
 
-        stubFor(get(urlPathEqualTo("/API_BILLING_DOCUMENT_SRV/BillingDocument"))
+        stubFor(get(urlPathEqualTo(BASE_PATH))
                 .withQueryParam("$filter", equalTo("ContractAccount eq '100200'"))
-                .withQueryParam("$expand", equalTo("to_BillingDocumentItem"))
+                .withQueryParam("$expand", equalTo("_CAInvcgDocItem"))
                 .willReturn(okJson(json)));
 
         List<ODataBillingDocument> result = client.findByContractAccount("100200");
 
         assertThat(result).hasSize(1);
         ODataBillingDocument doc = result.get(0);
-        assertThat(doc.getBillingDocument()).isEqualTo("0090001234");
+        assertThat(doc.getCaInvoicingDocument()).isEqualTo("000090001234");
         assertThat(doc.getContractAccount()).isEqualTo("0000100200");
-        assertThat(doc.getCustomerNumber()).isEqualTo("0000005678");
-        assertThat(doc.getNetAmount()).isEqualTo("1250.00");
+        assertThat(doc.getBusinessPartner()).isEqualTo("0000005678");
+        assertThat(doc.getCaAmountInTransactionCurrency()).isEqualTo("1250.00");
         assertThat(doc.getTransactionCurrency()).isEqualTo("EUR");
+        assertThat(doc.getCaOfficialDocumentNumber()).isEqualTo("ODN2024001234");
         assertThat(doc.getLineItems()).hasSize(1);
-        assertThat(doc.getLineItems().get(0).getBillingDocumentItem()).isEqualTo("000010");
-        assertThat(doc.getLineItems().get(0).getChargingCategory()).isEqualTo("ENERGY");
+        assertThat(doc.getLineItems().get(0).getCaInvcgDocItem()).isEqualTo("00000001");
+        assertThat(doc.getLineItems().get(0).getCaConditionType()).isEqualTo("USAG");
     }
 
     @Test
@@ -95,33 +100,29 @@ class BillingDocumentClientTest {
                   "d": {
                     "results": [
                       {
-                        "BillingDocument": "0090009999",
+                        "CAInvoicingDocument": "000090009999",
                         "ContractAccount": "0000200300",
-                        "NetAmount": "500.00",
-                        "TransactionCurrency": "USD",
-                        "BillingDocumentIsCancelled": false,
-                        "to_BillingDocumentItem": {
-                          "results": []
-                        }
+                        "CAAmountInTransactionCurrency": "500.00",
+                        "TransactionCurrency": "USD"
                       }
                     ]
                   }
                 }
                 """;
 
-        stubFor(get(urlPathEqualTo("/API_BILLING_DOCUMENT_SRV/BillingDocument"))
+        stubFor(get(urlPathEqualTo(BASE_PATH))
                 .willReturn(okJson(json)));
 
         List<ODataBillingDocument> result = client.findByContractAccount("200300");
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getBillingDocument()).isEqualTo("0090009999");
+        assertThat(result.get(0).getCaInvoicingDocument()).isEqualTo("000090009999");
         assertThat(result.get(0).getTransactionCurrency()).isEqualTo("USD");
     }
 
     @Test
     void findByContractAccount_emptyValueArray_returnsEmptyList() {
-        stubFor(get(urlPathEqualTo("/API_BILLING_DOCUMENT_SRV/BillingDocument"))
+        stubFor(get(urlPathEqualTo(BASE_PATH))
                 .willReturn(okJson("{\"value\":[]}")));
 
         List<ODataBillingDocument> result = client.findByContractAccount("100200");
@@ -131,7 +132,7 @@ class BillingDocumentClientTest {
 
     @Test
     void findByContractAccount_serverError_throwsODataClientException() {
-        stubFor(get(urlPathEqualTo("/API_BILLING_DOCUMENT_SRV/BillingDocument"))
+        stubFor(get(urlPathEqualTo(BASE_PATH))
                 .willReturn(serverError().withBody("{\"error\":\"Internal Server Error\"}")));
 
         assertThatThrownBy(() -> client.findByContractAccount("100200"))
@@ -142,7 +143,7 @@ class BillingDocumentClientTest {
 
     @Test
     void findByContractAccount_unauthorised_throwsODataClientException() {
-        stubFor(get(urlPathEqualTo("/API_BILLING_DOCUMENT_SRV/BillingDocument"))
+        stubFor(get(urlPathEqualTo(BASE_PATH))
                 .willReturn(unauthorized()));
 
         assertThatThrownBy(() -> client.findByContractAccount("100200"))
@@ -156,48 +157,51 @@ class BillingDocumentClientTest {
     void findById_v4Response_returnsDocumentWithLineItems() {
         String json = """
                 {
-                  "BillingDocument": "0090001234",
+                  "CAInvoicingDocument": "000090001234",
                   "ContractAccount": "0000100200",
-                  "NetAmount": "1250.00",
+                  "CAAmountInTransactionCurrency": "1250.00",
                   "TransactionCurrency": "EUR",
-                  "PaymentDueDate": "20240415",
-                  "ClearingStatus": "1",
-                  "BillingDocumentIsCancelled": false,
-                  "to_BillingDocumentItem": {
+                  "CANetDueDate": "2024-04-15",
+                  "CAOfficialDocumentNumber": "ODN2024001234",
+                  "CAInvcgReversalDocument": "",
+                  "_CAInvcgDocItem": {
                     "value": [
                       {
-                        "BillingDocument": "0090001234",
-                        "BillingDocumentItem": "000010",
-                        "NetAmount": "980.00",
-                        "TransactionCurrency": "EUR"
+                        "CAInvoicingDocument": "000090001234",
+                        "CAInvcgDocItem": "00000001",
+                        "CAAmountInTransactionCurrency": "980.00",
+                        "TransactionCurrency": "EUR",
+                        "CAClearingDocumentNumber": "CLRNG001"
                       },
                       {
-                        "BillingDocument": "0090001234",
-                        "BillingDocumentItem": "000020",
-                        "NetAmount": "270.00",
-                        "TransactionCurrency": "EUR"
+                        "CAInvoicingDocument": "000090001234",
+                        "CAInvcgDocItem": "00000002",
+                        "CAAmountInTransactionCurrency": "270.00",
+                        "TransactionCurrency": "EUR",
+                        "CAClearingDocumentNumber": "CLRNG002"
                       }
                     ]
                   }
                 }
                 """;
 
-        stubFor(get(urlPathEqualTo("/API_BILLING_DOCUMENT_SRV/BillingDocument('0090001234')"))
-                .withQueryParam("$expand", equalTo("to_BillingDocumentItem"))
+        stubFor(get(urlPathEqualTo(BASE_PATH + "(CAInvoicingDocument='000090001234')"))
+                .withQueryParam("$expand", equalTo("_CAInvcgDocItem"))
                 .willReturn(okJson(json)));
 
-        ODataBillingDocument result = client.findById("0090001234");
+        ODataBillingDocument result = client.findById("000090001234");
 
         assertThat(result).isNotNull();
-        assertThat(result.getBillingDocument()).isEqualTo("0090001234");
-        assertThat(result.getClearingStatus()).isEqualTo("1");
+        assertThat(result.getCaInvoicingDocument()).isEqualTo("000090001234");
+        assertThat(result.getCaOfficialDocumentNumber()).isEqualTo("ODN2024001234");
         assertThat(result.getLineItems()).hasSize(2);
-        assertThat(result.getLineItems().get(1).getBillingDocumentItem()).isEqualTo("000020");
+        assertThat(result.getLineItems().get(1).getCaInvcgDocItem()).isEqualTo("00000002");
+        assertThat(result.getLineItems().get(1).getCaClearingDocumentNumber()).isEqualTo("CLRNG002");
     }
 
     @Test
     void findById_notFound_throwsODataClientExceptionWith404() {
-        stubFor(get(urlPathMatching("/API_BILLING_DOCUMENT_SRV/BillingDocument.*"))
+        stubFor(get(urlPathMatching(BASE_PATH + ".*"))
                 .willReturn(notFound()));
 
         assertThatThrownBy(() -> client.findById("UNKNOWN"))
@@ -207,7 +211,7 @@ class BillingDocumentClientTest {
 
     @Test
     void findById_emptyBody_returnsNull() {
-        stubFor(get(urlPathEqualTo("/API_BILLING_DOCUMENT_SRV/BillingDocument('EMPTY')"))
+        stubFor(get(urlPathEqualTo(BASE_PATH + "(CAInvoicingDocument='EMPTY')"))
                 .willReturn(ok().withBody("")));
 
         ODataBillingDocument result = client.findById("EMPTY");
@@ -216,21 +220,22 @@ class BillingDocumentClientTest {
     }
 
     @Test
-    void findById_cancelledDocument_flagDeserialised() {
+    void findById_reversalDocument_fieldDeserialised() {
         String json = """
                 {
-                  "BillingDocument": "0090005555",
-                  "BillingDocumentIsCancelled": true,
-                  "ClearingStatus": null
+                  "CAInvoicingDocument": "000090005555",
+                  "CAInvcgReversalDocument": "000090006666",
+                  "CAInvcgReversedDocument": null
                 }
                 """;
 
-        stubFor(get(urlPathEqualTo("/API_BILLING_DOCUMENT_SRV/BillingDocument('0090005555')"))
+        stubFor(get(urlPathEqualTo(BASE_PATH + "(CAInvoicingDocument='000090005555')"))
                 .willReturn(okJson(json)));
 
-        ODataBillingDocument result = client.findById("0090005555");
+        ODataBillingDocument result = client.findById("000090005555");
 
         assertThat(result).isNotNull();
-        assertThat(result.getBillingDocumentIsCancelled()).isTrue();
+        assertThat(result.getCaInvcgReversalDocument()).isEqualTo("000090006666");
+        assertThat(result.getCaInvcgReversedDocument()).isNull();
     }
 }

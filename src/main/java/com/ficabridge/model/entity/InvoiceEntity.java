@@ -19,34 +19,38 @@ public class InvoiceEntity {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String idocDocnum;           // EDI_DC40.DOCNUM — used for idempotency
+    private String idocDocnum;           // legacy idempotency key — see Known Issues in CLAUDE.md
 
     @Column(unique = true, nullable = false)
-    private String billingDocNumber;     // E1INVDO.VBELN, leading zeros stripped
+    private String billingDocNumber;     // CAInvoicingDocument, leading zeros stripped
 
     @Column(nullable = false)
-    private String businessPartner;      // E1INVDO.GPART, leading zeros stripped
+    private String businessPartner;      // BusinessPartner, leading zeros stripped
 
     @Column(nullable = false)
-    private String contractAccount;      // E1INVDO.VKONT, leading zeros stripped
+    private String contractAccount;      // ContractAccount, leading zeros stripped
 
-    private String contractReference;    // E1INVDO.VTREF
+    private String contractReference;
 
-    private LocalDate dueDate;           // E1INVDO.FAEDN
+    /** Official Document Number (ODN) — CAOfficialDocumentNumber from API_CAINVOICINGDOCUMENT. */
+    @Column(length = 20)
+    private String officialDocumentNumber;
+
+    private LocalDate dueDate;           // CANetDueDate
 
     @Column(nullable = false, precision = 19, scale = 2)
-    private BigDecimal amount;           // E1INVDO.BETRW
+    private BigDecimal amount;           // CAAmountInTransactionCurrency
 
     @Column(nullable = false, length = 5)
-    private String currency;             // E1INVDO.WAERS
+    private String currency;             // TransactionCurrency
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private InvoiceStatus status;        // Derived from E1INVDO.AUGST + due date logic
+    private InvoiceStatus status;
 
-    private LocalDate clearingDate;      // E1INVDO.AUGDT — null when "00000000"
+    private LocalDate clearingDate;      // derived from FI-CA doc; null when not cleared
 
-    private String ficaDocNumber;        // E1INVDO.OPBEL, leading zeros stripped
+    private String ficaDocNumber;        // CADocumentNumber from line items, leading zeros stripped
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

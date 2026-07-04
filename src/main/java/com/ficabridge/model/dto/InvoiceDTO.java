@@ -10,6 +10,7 @@ import java.util.List;
 public class InvoiceDTO {
 
     private String billingDocNumber;
+    private String officialDocumentNumber;
     private String businessPartner;
     private String contractAccount;
     private String contractReference;
