@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ficabridge.model.odata.ODataFicaDocument;
 import com.ficabridge.model.odata.ODataWrapper;
+import io.github.resilience4j.ratelimiter.RateLimiter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -18,8 +19,8 @@ public class FicaDocumentClient extends ODataClientBase {
 
     private static final String BASE_PATH = "/API_FICADOCUMENT/FiCADocument";
 
-    public FicaDocumentClient(WebClient sapODataWebClient, ObjectMapper objectMapper) {
-        super(sapODataWebClient, objectMapper);
+    public FicaDocumentClient(WebClient sapODataWebClient, ObjectMapper objectMapper, RateLimiter sapODataRateLimiter) {
+        super(sapODataWebClient, objectMapper, sapODataRateLimiter);
     }
 
     /**

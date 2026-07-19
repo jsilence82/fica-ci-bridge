@@ -8,6 +8,7 @@ import com.ficabridge.exception.ODataClientException;
 import com.ficabridge.model.odata.ODataContractAccount;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.github.resilience4j.ratelimiter.RateLimiter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -33,7 +34,8 @@ class ContractAccountClientTest {
         WebClient webClient = WebClient.builder()
                 .baseUrl(wmRuntimeInfo.getHttpBaseUrl())
                 .build();
-        client = new ContractAccountClient(webClient, OBJECT_MAPPER);
+        // Effectively unlimited — rate-limiter engagement is covered separately in ODataClientRateLimiterTest.
+        client = new ContractAccountClient(webClient, OBJECT_MAPPER, RateLimiter.ofDefaults("test"));
     }
 
     // ── findById ─────────────────────────────────────────────────────────────

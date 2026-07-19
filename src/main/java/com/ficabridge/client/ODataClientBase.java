@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ficabridge.exception.ODataClientException;
 import com.ficabridge.model.odata.ODataWrapper;
+import io.github.resilience4j.ratelimiter.RateLimiter;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
+import io.github.resilience4j.reactor.ratelimiter.operator.RateLimiterOperator;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriBuilder;
@@ -19,6 +22,7 @@ import java.util.function.Function;
  * Handles:
  * <ul>
  *   <li>$filter / $select / $expand query parameter construction</li>
+ *   <li>Rate limiting of outbound calls to the SAP backend</li>
  *   <li>4xx / 5xx error wrapping into {@link ODataClientException}</li>
  *   <li>Response deserialization via {@link ODataWrapper}</li>
  * </ul>
@@ -31,10 +35,12 @@ public abstract class ODataClientBase {
 
     protected final WebClient webClient;
     protected final ObjectMapper objectMapper;
+    protected final RateLimiter rateLimiter;
 
-    protected ODataClientBase(WebClient webClient, ObjectMapper objectMapper) {
+    protected ODataClientBase(WebClient webClient, ObjectMapper objectMapper, RateLimiter rateLimiter) {
         this.webClient = webClient;
         this.objectMapper = objectMapper;
+        this.rateLimiter = rateLimiter;
     }
 
     /**
@@ -68,6 +74,7 @@ public abstract class ODataClientBase {
                     .uri(uriSpec)
                     .retrieve()
                     .bodyToMono(String.class)
+                    .transformDeferred(RateLimiterOperator.of(rateLimiter))
                     .block();
 
             if (json == null || json.isBlank()) {
@@ -77,6 +84,8 @@ public abstract class ODataClientBase {
             ODataWrapper<T> wrapper = objectMapper.readValue(json, typeRef);
             return wrapper.getResults();
 
+        } catch (RequestNotPermitted ex) {
+            throw ex;
         } catch (WebClientResponseException ex) {
             throw new ODataClientException(
                     "OData request failed [" + entitySetPath + "]: HTTP " + ex.getStatusCode() + " — " + ex.getResponseBodyAsString(),
@@ -108,6 +117,7 @@ public abstract class ODataClientBase {
                     .uri(uriSpec)
                     .retrieve()
                     .bodyToMono(String.class)
+                    .transformDeferred(RateLimiterOperator.of(rateLimiter))
                     .block();
 
             if (json == null || json.isBlank()) {
@@ -122,6 +132,8 @@ public abstract class ODataClientBase {
             }
             return objectMapper.readValue(json, type);
 
+        } catch (RequestNotPermitted ex) {
+            throw ex;
         } catch (WebClientResponseException ex) {
             throw new ODataClientException(
                     "OData request failed [" + entityPath + "]: HTTP " + ex.getStatusCode() + " — " + ex.getResponseBodyAsString(),

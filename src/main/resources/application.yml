@@ -30,6 +30,18 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+# Rate-limits outbound OData calls to the SAP FI-CA backend so this bridge cannot
+# overwhelm it with concurrent traffic. These are starting values, not tuned figures —
+# adjust limit-for-period / limit-refresh-period against real SAP throughput and
+# timeout-duration against how long a caller can tolerate waiting for a permit.
+resilience4j:
+  ratelimiter:
+    instances:
+      sapOData:
+        limit-for-period: 10
+        limit-refresh-period: 1s
+        timeout-duration: 500ms
+
 logging:
   level:
     com.ficabridge: INFO
