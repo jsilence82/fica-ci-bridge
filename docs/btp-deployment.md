@@ -137,7 +137,9 @@ Flyway runs automatically on startup. Check the logs for migration output:
 INFO  o.f.core.internal.command.DbMigrate - Migrating schema to version 1 - create invoice table
 INFO  o.f.core.internal.command.DbMigrate - Migrating schema to version 2 - create contract account table
 INFO  o.f.core.internal.command.DbMigrate - Migrating schema to version 3 - create line items table
-INFO  o.f.core.internal.command.DbMigrate - Successfully applied 3 migrations
+INFO  o.f.core.internal.command.DbMigrate - Migrating schema to version 4 - add official document number
+INFO  o.f.core.internal.command.DbMigrate - Migrating schema to version 5 - add document sync
+INFO  o.f.core.internal.command.DbMigrate - Successfully applied 5 migrations
 ```
 
 ---
@@ -208,5 +210,13 @@ cf scale fica-ci-bridge -i 2
 cf scale fica-ci-bridge -m 1G
 ```
 
-The application is stateless: all data lives in the bound PostgreSQL instance. Multiple
+The REST layer is stateless: all data lives in the bound PostgreSQL instance, and multiple
 instances can serve concurrent REST requests without coordination.
+
+**`DocumentSyncScheduler` is the exception.** It runs as an in-app `@Scheduled` job with no
+distributed lock, so every CF instance polls SAP on its own independent schedule — scaling to
+`-i 2` or more multiplies outbound SAP call volume with no benefit, not just wasted work. Before
+scaling this application beyond one instance against a real SAP backend, either add a
+distributed lock (e.g. [ShedLock](https://github.com/lukas-krecan/ShedLock)) or move the sync
+job out of the application entirely (a scheduled CF task, for instance). See the README's
+[Document Sync](../README.md#document-sync) section for the full limitation.

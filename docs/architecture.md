@@ -96,6 +96,11 @@ source adapter — an IDoc/ALE listener, an SAP Event Mesh consumer, a direct BA
 without changing a single service, controller, or DTO class. The adapter just needs to
 produce the same domain DTOs.
 
+The same principle governs how the cache gets *updated*, not just how it's *read*: `sync/`
+writes to `InvoiceRepository` exclusively through the `DocumentChangeIngester` interface (see
+"Document Sync" below), so the polling scheduler that currently populates changes can later be
+replaced by an event-driven consumer without `service/` or `controller/` changing either.
+
 ---
 
 ## Outbound API
@@ -140,6 +145,33 @@ modifies the schema. All DDL changes go through versioned Flyway scripts.
 ### WireMock as SAP stub
 In local and test environments, WireMock stubs the SAP OData endpoints so the project runs
 without SAP infrastructure. Stubs live in `wiremock/mappings/` and `wiremock/__files/`.
+
+### Document Sync (sync/)
+`DocumentSyncScheduler` is the first writer the invoice cache has ever had. Once per
+`sync.poll-interval`, it groups cached `OPEN`/`OVERDUE` invoices by contract account, calls
+`FicaDocumentClient.findByContractAccount` once per account, and re-derives each document's
+status with the existing `FiCaDocTransformer` — the same status-derivation logic
+`FiCaDocTransformer` already uses elsewhere, not a second reimplementation of it.
+
+Two design points that aren't obvious from the code alone:
+
+- **Why it fetches unfiltered, not `findOpenItemsByContractAccount`.** SAP's `ClearingStatus eq
+  'OPEN'` filter would hide the very documents that transitioned *out* of OPEN — the scheduler
+  needs the current state of every document it's tracking, not just the ones still open, to
+  detect the transition at all.
+- **Why the match key is `ficaDocNumber`, not `billingDocNumber`.** `API_FICADOCUMENT` (what
+  this scheduler polls) and `API_CAINVOICINGDOCUMENT` (what invoices are keyed by in the cache)
+  are different SAP objects with different key spaces. `DocumentSyncScheduler.diff()` resolves
+  the FI-CA document number back to the cached invoice via `InvoiceEntity.ficaDocNumber` before
+  emitting a `DocumentChange` keyed by `billingDocNumber` — the natural key the rest of the
+  system, including `DocumentChangeIngester`, actually uses.
+
+**Explicitly out of scope for this job:** discovering invoices SAP has posted that the cache
+has never seen (a cache miss is treated as an error, not an insert — see
+`JpaDocumentChangeIngester`), and any event-driven consumer implementation. Both are described
+as future work in the README's [Document Sync](../README.md#document-sync) section, which is
+also the authoritative source for this job's known limitations (single-instance-only
+scheduling, demo-scale polling).
 
 ---
 

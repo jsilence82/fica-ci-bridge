@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,6 +55,9 @@ public class InvoiceEntity {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /** Set by {@code sync.DocumentSyncScheduler} on each successful poll; null until the first sync. */
+    private Instant lastSyncedAt;
 
     @OneToMany(mappedBy = "invoice", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<InvoiceLineItemEntity> lineItems;

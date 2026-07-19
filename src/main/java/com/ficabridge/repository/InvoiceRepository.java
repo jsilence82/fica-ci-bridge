@@ -17,6 +17,8 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, Long> {
 
     List<InvoiceEntity> findByStatus(InvoiceStatus status);
 
+    List<InvoiceEntity> findByStatusIn(List<InvoiceStatus> statuses);
+
     List<InvoiceEntity> findByContractAccountAndStatus(String contractAccount, InvoiceStatus status);
 
     boolean existsByIdocDocnum(String idocDocnum);

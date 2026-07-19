@@ -71,7 +71,9 @@ GET /API_CA_CONTRACTACCOUNT/ContractAccount?$filter=BusinessPartner eq '00001000
 **Service path:** `/API_FICADOCUMENT/FiCADocument`
 
 Used by this bridge to query **posted FI-CA accounting documents** and **open receivable items**.
-These are the raw ledger postings in FI-CA — one document per billing/clearing event.
+These are the raw ledger postings in FI-CA — one document per billing/clearing event. Also the
+source API for `DocumentSyncScheduler` (`sync/`) — see [docs/architecture.md](architecture.md#document-sync-sync)
+and the README's [Document Sync](../README.md#document-sync) section.
 
 > **Note:** Dates in this API are returned as YYYYMMDD strings and must be parsed with
 > `TransformerUtils.parseSapDate()`. This differs from `API_CAINVOICINGDOCUMENT` (V4),
