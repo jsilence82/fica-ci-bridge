@@ -1,0 +1,57 @@
+# WireMock stands in for the SAP OData backend — there is no real SAP system in this
+# PoC. Image is built from wiremock/Dockerfile with the stubs baked in (see that file
+# for why: kind/minikube nodes can't see host bind mounts the way docker-compose can).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiremock
+  namespace: fica-ci-bridge
+  labels:
+    app: wiremock
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wiremock
+  template:
+    metadata:
+      labels:
+        app: wiremock
+    spec:
+      containers:
+        - name: wiremock
+          image: fica-ci-bridge-wiremock:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /__admin/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /__admin/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wiremock
+  namespace: fica-ci-bridge
+spec:
+  selector:
+    app: wiremock
+  ports:
+    - port: 8080
+      targetPort: 8080

@@ -1,0 +1,12 @@
+# Non-secret runtime config for fica-ci-bridge. Mirrors the env vars docker-compose.yml
+# sets for the "app" service, but pointed at in-cluster Service DNS names instead of
+# docker-compose service names.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fica-ci-bridge-config
+  namespace: fica-ci-bridge
+data:
+  SPRING_PROFILES_ACTIVE: "local"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres:5432/ficabridge"
+  SAP_ODATA_BASE_URL: "http://wiremock:8080"

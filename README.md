@@ -15,11 +15,11 @@ and payment processors.
 ## Architecture
 
 ```
-S/4HANA OData V4 APIs
+S/4HANA OData APIs
   Contract Account (FI-CA)
-  Contract Accounting Business Partner Invoice - Read
-  Convergent Invoicing – Billing Document
-  Business Partner
+  FI-CA Document
+  CA Invoicing Document - Read (V4)
+  Business Partner*
           │
           │  HTTP (Basic Auth / OAuth2 via BTP XSUAA)
           ▼
@@ -50,6 +50,8 @@ S/4HANA OData V4 APIs
   H2 (dev) / PostgreSQL (prod)  — optional local cache
 ```
 
+\* Business Partner is not yet implemented — see [Scope & Limitations](#scope--limitations).
+
 In local and test environments a **WireMock** server stubs the SAP OData responses.
 No SAP system is required to build or run the project.
 
@@ -57,12 +59,16 @@ No SAP system is required to build or run the project.
 
 ## SAP APIs Consumed
 
-| API Name (search this on the Hub)                       | API ID                        | Used For                            |
-|---------------------------------------------------------|-------------------------------|-------------------------------------|
-| Contract Account (FI-CA)                                | API_CA_CONTRACTACCOUNT        | Contract account master data        |
-| Contract Accounting Business Partner Invoice - Read     | API_FICADOCUMENT              | Posted FI-CA accounting documents   |
-| CA Invoicing Document - Read                            | API_CAINVOICINGDOCUMENT       | FI-CA invoicing doc header + items  |
-| Business Partner                                        | API_BUSINESS_PARTNER          | BP data linked to contract accounts |
+| API Name (search this on the Hub)                       | API ID                        | Protocol | Used For                            | Status          |
+|---------------------------------------------------------|-------------------------------|----------|--------------------------------------|-----------------|
+| Contract Account (FI-CA)                                | API_CA_CONTRACTACCOUNT        | V2       | Contract account master data         | Implemented     |
+| FI-CA Document                                          | API_FICADOCUMENT              | V2       | Posted FI-CA accounting documents    | Implemented     |
+| CA Invoicing Document - Read                            | API_CAINVOICINGDOCUMENT       | V4       | FI-CA invoicing doc header + items   | Implemented     |
+| Business Partner                                        | API_BUSINESS_PARTNER          | V2       | BP data linked to contract accounts  | Not implemented |
+| Contract Accounting Business Partner Invoice - Read     | API_CABUSPARTINVOICE          | V4       | Explicit status, clearing date, PDFs | Not implemented |
+
+Full field-level detail for each API is in
+[docs/odata-api-reference.md](docs/odata-api-reference.md).
 
 > **Finding these APIs:** Search by the API name on the
 > [SAP Business Accelerator Hub](https://api.sap.com). Use V4 where available; fall back
@@ -72,12 +78,13 @@ No SAP system is required to build or run the project.
 
 ## REST API
 
-| Method | Path                                  | Description                        |
-|--------|---------------------------------------|------------------------------------|
-| GET    | `/api/invoices`                       | List billing documents             |
-| GET    | `/api/invoices/{billingDocument}`     | Single billing document with items |
-| GET    | `/api/contract-accounts/{vkont}`      | Contract account master data       |
-| GET    | `/api/payments`                       | Open FI-CA items (receivables)     |
+| Method | Path                                  | Description                                       |
+|--------|---------------------------------------|----------------------------------------------------|
+| GET    | `/api/invoices`                       | List billing documents                             |
+| GET    | `/api/invoices/{billingDocument}`     | Single billing document with items                 |
+| GET    | `/api/contract-accounts/{vkont}`      | Contract account master data                       |
+| GET    | `/api/contract-accounts/overdue`      | Contract accounts with at least one OVERDUE invoice |
+| GET    | `/api/payments`                       | Open FI-CA items (receivables)                     |
 
 Swagger UI is available at `/swagger-ui.html` when the application is running.
 
@@ -124,13 +131,15 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # macOS
 | Environment Variable      | Description                              | Dev Default              |
 |---------------------------|------------------------------------------|--------------------------|
 | `SAP_ODATA_BASE_URL`      | Base URL of S/4HANA OData services       | `http://localhost:8089`  |
-| `SAP_ODATA_AUTH_TYPE`     | `basic` or `oauth2`                      | `basic`                  |
 | `SAP_ODATA_USERNAME`      | Basic auth username                      | `wiremock`               |
 | `SAP_ODATA_PASSWORD`      | Basic auth password                      | `wiremock`               |
 | `SPRING_DATASOURCE_URL`   | JDBC URL                                 | H2 in-memory             |
 
-In production (BTP), `SAP_ODATA_BASE_URL` points at the real S/4HANA system via a BTP Destination.
-OAuth2 credentials come from the BTP XSUAA service binding.
+`WebClientConfig` always authenticates outbound SAP calls with Basic auth — there is no OAuth2
+client-credentials path yet for outbound OData calls. In production (BTP), `SAP_ODATA_BASE_URL`
+would point at the real S/4HANA system via a BTP Destination; OAuth2-via-XSUAA for outbound SAP
+calls is aspirational (see [Scope & Limitations](#scope--limitations)) — do not confuse it with
+inbound XSUAA JWT validation on this bridge's own REST API, which is also not yet wired.
 
 ---
 
@@ -165,6 +174,108 @@ figures — increase them once you know the real throughput the target SAP syste
 controls the tradeoff between latency and throughput: a short timeout fails fast under load
 (cheap for the caller, cheap for SAP) while a longer timeout smooths out bursts at the cost of
 slower responses when the limiter is saturated.
+
+---
+
+## Running on Kubernetes (local)
+
+`fica-ci-bridge` deploys to Kubernetes as three workloads in a `fica-ci-bridge` namespace:
+the app itself, an in-cluster Postgres (replacing the H2/PostgreSQL local cache), and an
+in-cluster WireMock standing in for the real SAP OData backend (there is no real SAP system
+in this PoC — see [Scope & Limitations](#scope--limitations)).
+
+```
+host :80 ──▶ Ingress (nginx)
+             host: fica-ci-bridge.local
+                      │
+                      ▼
+             Service: fica-ci-bridge  ◀── HorizontalPodAutoscaler
+                      │                   (2–5 pods, target 70% CPU)
+                      ▼
+   Deployment: fica-ci-bridge (2 replicas)
+     initContainer: wait-for-postgres
+     startup / liveness / readiness probes → /actuator/health/*
+     env ← ConfigMap (fica-ci-bridge-config) + Secret (fica-ci-bridge-secrets)
+                      │
+           ┌──────────┴──────────┐
+           ▼                     ▼
+   Service: postgres      Service: wiremock
+   → Deployment + PVC     → Deployment
+     (local JPA cache)      (stubs baked into image;
+                              stands in for SAP OData)
+```
+
+### Prerequisites
+
+- Docker Desktop (or another Docker daemon)
+- [`kind`](https://kind.sigs.k8s.io/) — `brew install kind`
+- `kubectl`
+
+### Setup
+
+```bash
+# 1. Build the app image and the self-contained WireMock image
+docker build -t fica-ci-bridge:local .
+docker build -t fica-ci-bridge-wiremock:local ./wiremock
+
+# 2. Create a kind cluster with ports 80/443 exposed on the host, for Ingress
+kind create cluster --name fica-ci-bridge --config k8s/kind-config.yaml
+
+# 3. Install ingress-nginx (kind's documented recipe) and metrics-server (required for the HPA)
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+kubectl wait --namespace ingress-nginx --for=condition=ready pod \
+  --selector=app.kubernetes.io/component=controller --timeout=180s
+
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+# kind's kubelet certs aren't signed for metrics-server's default verification:
+kubectl patch deployment metrics-server -n kube-system --type='json' \
+  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+
+# 4. Load the locally-built images into the kind cluster (no registry needed)
+kind load docker-image fica-ci-bridge:local --name fica-ci-bridge
+kind load docker-image fica-ci-bridge-wiremock:local --name fica-ci-bridge
+
+# 5. Apply the manifests
+kubectl apply -f k8s/namespace.yaml -f k8s/configmap.yaml -f k8s/secret.yaml \
+  -f k8s/postgres.yaml -f k8s/wiremock.yaml \
+  -f k8s/deployment.yaml -f k8s/service.yaml -f k8s/ingress.yaml -f k8s/hpa.yaml
+
+# 6. Wait for the rollout, then hit it through the Ingress
+kubectl -n fica-ci-bridge rollout status deployment/fica-ci-bridge
+curl -H "Host: fica-ci-bridge.local" http://localhost/actuator/health/readiness
+curl -H "Host: fica-ci-bridge.local" http://localhost/api/invoices
+```
+
+Check the HPA is actually receiving metrics (not just configured):
+
+```bash
+kubectl -n fica-ci-bridge get hpa
+# NAME             REFERENCE                   TARGETS       MINPODS   MAXPODS   REPLICAS
+# fica-ci-bridge   Deployment/fica-ci-bridge   cpu: 3%/70%   2         5         2
+```
+
+Tear down when done: `kind delete cluster --name fica-ci-bridge`
+
+### Notes on the manifests
+
+- **Probes** (`k8s/deployment.yaml`) use a `startupProbe` against `/actuator/health` to give the
+  JVM + Flyway migrations room to boot, then separate `livenessProbe` /
+  `readinessProbe` against Spring Boot Actuator's `/actuator/health/liveness` and
+  `/actuator/health/readiness` health-indicator groups.
+- **`initContainer: wait-for-postgres`** blocks the app container from starting until
+  `pg_isready` succeeds against the `postgres` Service. Without it, the app and Postgres pods
+  start concurrently, the app's first connection attempt fails before Postgres is accepting
+  connections, and the container restarts once via CrashLoopBackOff before settling — the
+  initContainer turns that into a single clean startup instead.
+- **ConfigMap vs Secret**: `k8s/configmap.yaml` holds non-secret values (active profile, service
+  URLs); `k8s/secret.yaml` holds credentials. Both are consumed via `envFrom`, the same
+  environment-variable surface `docker-compose.yml` already uses (`SPRING_DATASOURCE_URL`,
+  `SAP_ODATA_BASE_URL`, etc.) — no code changes were needed to make the app config-map-friendly.
+  The credentials in `k8s/secret.yaml` are the same throwaway local-dev values `docker-compose.yml`
+  already uses, not real secrets; a production deployment would source this from a secret manager
+  rather than committing even low-value plaintext credentials.
+- **HPA** (`k8s/hpa.yaml`) scales `fica-ci-bridge` between 2 and 5 replicas on 70% average CPU
+  utilization. Requires `metrics-server` in the cluster (installed above).
 
 ---
 
@@ -234,6 +345,19 @@ src/main/java/com/ficabridge/
 └── transformer/     SAP field names / dates / amounts → domain types
 
 wiremock/
+├── Dockerfile       Self-contained WireMock image (stubs baked in, for k8s)
 ├── mappings/        WireMock stub request matchers
 └── __files/         OData JSON response bodies
+
+k8s/
+├── kind-config.yaml Local kind cluster config (ingress port mappings)
+├── namespace.yaml
+├── configmap.yaml   Non-secret runtime config
+├── secret.yaml      Local-dev credentials (Postgres, WireMock)
+├── postgres.yaml    In-cluster Postgres (Deployment + PVC + Service)
+├── wiremock.yaml    In-cluster WireMock (Deployment + Service)
+├── deployment.yaml  fica-ci-bridge Deployment (probes, initContainer, resources)
+├── service.yaml
+├── ingress.yaml
+└── hpa.yaml
 ```
