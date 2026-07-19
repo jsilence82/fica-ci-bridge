@@ -134,6 +134,8 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)   # macOS
 | `SAP_ODATA_USERNAME`      | Basic auth username                      | `wiremock`               |
 | `SAP_ODATA_PASSWORD`      | Basic auth password                      | `wiremock`               |
 | `SPRING_DATASOURCE_URL`   | JDBC URL                                 | H2 in-memory             |
+| `SYNC_POLL_INTERVAL`      | `DocumentSyncScheduler` cycle interval   | `PT1H`                   |
+| `SYNC_INITIAL_DELAY`      | Delay before the first sync after startup| `PT1H`                   |
 
 `WebClientConfig` always authenticates outbound SAP calls with Basic auth — there is no OAuth2
 client-credentials path yet for outbound OData calls. In production (BTP), `SAP_ODATA_BASE_URL`
@@ -174,6 +176,54 @@ figures — increase them once you know the real throughput the target SAP syste
 controls the tradeoff between latency and throughput: a short timeout fails fast under load
 (cheap for the caller, cheap for SAP) while a longer timeout smooths out bursts at the cost of
 slower responses when the limiter is saturated.
+
+---
+
+## Document Sync
+
+`DocumentSyncScheduler` (in `sync/`) is a polling job that keeps cached invoices' clearing
+status current with SAP. It is the first implementation of the ingest path the cache previously
+had no writer for — see [Scope & Limitations](#scope--limitations) for what it does *not* cover.
+
+**What it does, once per `sync.poll-interval`:**
+1. Loads all cached invoices with status `OPEN` or `OVERDUE`, grouped by contract account.
+2. Calls `FicaDocumentClient.findByContractAccount` once per contract account (never once per
+   document) and re-derives each document's status via the existing `FiCaDocTransformer`.
+3. Hands any detected status/clearing-date transitions to `DocumentChangeIngester`, the only
+   class allowed to write clearing-status updates to `InvoiceRepository`.
+4. Records one `SyncRunEntity` row per cycle (`RUNNING` → `COMPLETED`/`FAILED`, with a document
+   count and failure reason) — interview/demo evidence today, a metrics source later.
+
+**Scope — status transitions only.** This job assumes the invoice is already in the cache; it
+does not discover invoices SAP has posted that the cache has never seen. `JpaDocumentChangeIngester`
+throws `ResourceNotFoundException` rather than inserting on a cache miss. Discovery sync is
+separate, later work with a different (likely lazier) cadence.
+
+**The seam.** `DocumentChangeIngester` is the only path from "something learned a document
+changed" to "the cache gets updated." A future event-driven source (SAP Event Mesh, an
+IDoc/change-pointer listener) implements the same interface and replaces
+`DocumentSyncScheduler` entirely, without `service/` or `controller/` changing.
+
+**Known limitations (see `DocumentSyncScheduler` Javadoc for the authoritative version):**
+- **Single-instance only.** `@Scheduled` runs on every replica with no coordination. **This
+  bridge's own `k8s/deployment.yaml` + HPA scales 2–5 replicas** — running the current sync code
+  there means every replica polls SAP independently, multiplying call volume for no benefit.
+  Before running with more than one replica, either move the scheduler to a Kubernetes `CronJob`
+  or add a distributed lock (e.g. [ShedLock](https://github.com/lukas-krecan/ShedLock)).
+- **Demo-scale polling, not a production answer at real volume** (tens of thousands of
+  documents/month). It also fetches every open/overdue document's contract account unfiltered by
+  clearing status — deliberately, so a transition *out* of OPEN/OVERDUE is still visible — rather
+  than using the narrower `findOpenItemsByContractAccount` filter, which would hide exactly the
+  transitions this job exists to detect. The production path is event-driven ingestion through
+  the same `DocumentChangeIngester` seam.
+
+Configuration (`application.yml` / env vars `SYNC_POLL_INTERVAL`, `SYNC_INITIAL_DELAY`):
+
+```yaml
+sync:
+  poll-interval: PT1H    # how often the scheduler runs
+  initial-delay: PT1H    # delay before the first run after startup
+```
 
 ---
 
@@ -276,6 +326,12 @@ Tear down when done: `kind delete cluster --name fica-ci-bridge`
   rather than committing even low-value plaintext credentials.
 - **HPA** (`k8s/hpa.yaml`) scales `fica-ci-bridge` between 2 and 5 replicas on 70% average CPU
   utilization. Requires `metrics-server` in the cluster (installed above).
+- **`DocumentSyncScheduler` is not yet safe at this replica count.** It runs as an in-app
+  `@Scheduled` job with no distributed lock, so every one of the 2–5 replicas here polls SAP on
+  its own schedule — harmless against WireMock, but exactly the multiplied-call-volume problem
+  described in [Document Sync](#document-sync) against a real SAP system. Add a lock (e.g.
+  ShedLock) or move the job to a `CronJob` before running this manifest against anything but a
+  demo backend.
 
 ---
 
@@ -319,7 +375,8 @@ intentionally out of scope and would need to be addressed before any real deploy
 
 | Gap | Impact |
 |---|---|
-| **No data sync path** | REST endpoints always return empty results unless data is seeded manually; no scheduled or event-driven ingest from SAP |
+| **Discovery sync not implemented** | `DocumentSyncScheduler` (see [Document Sync](#document-sync)) keeps *known* invoices' clearing status current, but nothing discovers invoices SAP has posted that the cache has never seen — REST endpoints only ever reflect what's been manually seeded or already synced once |
+| **Sync is single-instance only** | No distributed lock; unsafe to run with more than one replica against a real SAP backend — see [Document Sync](#document-sync) |
 | **No authentication** | All endpoints are `permitAll()`; Basic Auth (local) and XSUAA JWT (BTP) are not wired |
 | **No pagination** | List endpoints return unbounded result sets |
 | **`clearingDate` always null** | `InvoiceDTO.clearingDate` is never populated — requires `API_CABUSPARTINVOICE` item-level clearing data |
@@ -339,9 +396,10 @@ src/main/java/com/ficabridge/
 ├── mapper/          MapStruct entity ↔ DTO mappers
 ├── model/
 │   ├── dto/         Outbound REST response objects
-│   ├── entity/      JPA entities for local cache
+│   ├── entity/      JPA entities for local cache (InvoiceEntity, SyncRunEntity, ...)
 │   └── odata/       Raw OData response objects (deserialized JSON)
 ├── service/         Input-agnostic orchestration services
+├── sync/            Polling document sync (DocumentSyncScheduler, DocumentChangeIngester seam)
 └── transformer/     SAP field names / dates / amounts → domain types
 
 wiremock/

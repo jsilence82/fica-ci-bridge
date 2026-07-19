@@ -62,6 +62,14 @@ resilience4j:
         limit-refresh-period: 1s
         timeout-duration: 500ms
 
+
+# Polling-based document sync — a demo-scale mechanism, not the production answer at real
+# volume. See sync.DocumentSyncScheduler class-level Javadoc for known limitations
+# (single-instance only, no distributed lock).
+sync:
+  poll-interval: PT1H
+  initial-delay: PT1H
+
 logging:
   level:
     com.ficabridge: INFO

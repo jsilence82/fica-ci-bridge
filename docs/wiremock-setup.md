@@ -118,6 +118,12 @@ layer — the two test suites in this project have different jobs and different 
   files from disk — the `wiremock/` directory's stubs are for **manual/local** use (via
   `docker-compose up`), not consumed by this test suite directly.
 
+  `DocumentSyncSchedulerWireMockTest` (`sync/`) follows the same pattern one layer up: a real
+  `FicaDocumentClient` against WireMock, but with `InvoiceRepository`, `SyncRunRepository`, and
+  `DocumentChangeIngester` mocked with Mockito rather than backed by JPA — the client-HTTP
+  boundary is what's worth exercising over real WireMock; the repository/ingester collaboration
+  is plain object interaction and doesn't need it.
+
 - **Full-context integration tests** (`InvoiceIntegrationTest`, `ContractAccountIntegrationTest`)
   boot the whole Spring context with `@SpringBootTest(webEnvironment = RANDOM_PORT)` and a
   `TestRestTemplate`, but **do not use WireMock at all** — they seed the H2 database directly via
