@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fica-ci-bridge
+  namespace: fica-ci-bridge
+spec:
+  selector:
+    app: fica-ci-bridge
+  ports:
+    - port: 80
+      targetPort: 8080

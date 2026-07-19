@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fica-ci-bridge
+  namespace: fica-ci-bridge
+  labels:
+    app: fica-ci-bridge
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fica-ci-bridge
+  template:
+    metadata:
+      labels:
+        app: fica-ci-bridge
+    spec:
+      # Without this, the app and postgres pods start concurrently, the app's first
+      # connection attempt fails before postgres is accepting connections, and the
+      # container CrashLoopBackOffs once before Kubernetes' restart brings it up clean.
+      # Waiting here turns that into a single clean startup instead.
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - until pg_isready -h postgres -p 5432; do echo waiting for postgres; sleep 2; done
+      containers:
+        - name: fica-ci-bridge
+          image: fica-ci-bridge:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: fica-ci-bridge-config
+            - secretRef:
+                name: fica-ci-bridge-secrets
+          # Gives the JVM + Flyway migrations room to finish booting before liveness/readiness
+          # start counting failures, without inflating their own initialDelay/timing budgets.
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 30 # ~60s startup budget
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 768Mi

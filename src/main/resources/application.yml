@@ -30,6 +30,26 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 
+# Exposes /actuator/health/liveness and /actuator/health/readiness for Kubernetes
+# probes. probes.enabled is set explicitly rather than relying on Spring Boot's
+# "running in Kubernetes" auto-detection, so the same endpoints work identically
+# outside a cluster too (e.g. docker-compose, local mvn run).
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
 # Rate-limits outbound OData calls to the SAP FI-CA backend so this bridge cannot
 # overwhelm it with concurrent traffic. These are starting values, not tuned figures —
 # adjust limit-for-period / limit-refresh-period against real SAP throughput and

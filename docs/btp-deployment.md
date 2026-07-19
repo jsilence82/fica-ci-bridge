@@ -39,10 +39,6 @@ Create this file before running the XSUAA service command above:
     {
       "name": "$XSAPPNAME.read",
       "description": "Read invoices and contract accounts"
-    },
-    {
-      "name": "$XSAPPNAME.inbound",
-      "description": "Post IDocs from SAP ALE"
     }
   ],
   "role-templates": [
@@ -50,11 +46,6 @@ Create this file before running the XSUAA service command above:
       "name": "BillingReader",
       "description": "Can read invoice and contract account data",
       "scope-references": [ "$XSAPPNAME.read" ]
-    },
-    {
-      "name": "AleReceiver",
-      "description": "SAP system account for IDoc posting",
-      "scope-references": [ "$XSAPPNAME.inbound" ]
     }
   ]
 }
@@ -171,36 +162,39 @@ arrive at runtime through the service bindings.
 
 ## 7. Connecting to On-Premise SAP
 
-The BTP Connectivity Service + Cloud Connector tunnel allows the on-premise SAP system to
-reach the bridge's inbound endpoint without exposing it to the public internet.
+This bridge only makes **outbound** calls to SAP (OData `GET` requests via `BillingDocumentClient`,
+`ContractAccountClient`, `FicaDocumentClient`) — it never receives inbound calls from SAP. If the
+target S/4HANA system is on-premise rather than a BTP-hosted SaaS tenant, the BTP Destination
+Service + Connectivity Service + Cloud Connector let the bridge reach it without exposing the
+on-premise system to the public internet.
 
 **Architecture:**
 ```
-SAP S/4HANA (on-premise)
+FI-CA CI Bridge (Cloud Foundry)
     │
-    │  ALE HTTP port → Cloud Connector (on-premise agent)
-    │
-    ▼
-SAP Cloud Connector
-    │
-    │  Encrypted tunnel (no inbound firewall rules needed)
-    │
+    │  OData GET, routed via a BTP Destination
     ▼
 BTP Connectivity Service
     │
+    │  Encrypted tunnel (no inbound firewall rules needed on the SAP side)
     ▼
-FI-CA CI Bridge (Cloud Foundry)
-POST /api/idoc/billing
+SAP Cloud Connector (on-premise agent)
+    │
+    ▼
+SAP S/4HANA (on-premise)
 ```
 
 **Configuration steps:**
 1. Install and configure SAP Cloud Connector on a machine in the corporate network
-2. In the Cloud Connector admin UI, create a mapping from a virtual host to the CF application URL
+2. In the Cloud Connector admin UI, expose the S/4HANA OData services (e.g.
+   `/sap/opu/odata4/...`, `/API_CA_CONTRACTACCOUNT/...`) via an access control list
 3. In the CF application, bind the `connectivity-ficabridge` service instance
-4. In SAP (SM59), point the RFC/HTTP destination at the virtual host exposed by Cloud Connector
+4. Create a BTP Destination of type `HTTP` with `ProxyType: OnPremise`, pointing at the virtual
+   host exposed by Cloud Connector, and configure `SAP_ODATA_BASE_URL` (or the Destination
+   lookup, once implemented) to resolve to it
 
-The bridge application itself requires no special connectivity configuration — it simply
-exposes an HTTP endpoint. The tunnel is transparent at the application layer.
+The bridge application itself requires no special connectivity configuration beyond the
+outbound `WebClient` base URL — the tunnel is transparent at the application layer.
 
 ---
 
@@ -215,4 +209,4 @@ cf scale fica-ci-bridge -m 1G
 ```
 
 The application is stateless: all data lives in the bound PostgreSQL instance. Multiple
-instances handle concurrent ALE posts without coordination.
+instances can serve concurrent REST requests without coordination.
