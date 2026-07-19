@@ -1,5 +1,6 @@
 package com.ficabridge.exception;
 
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,6 +15,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    @ExceptionHandler(RequestNotPermitted.class)
+    public ResponseEntity<ErrorResponse> handleRateLimitExceeded(RequestNotPermitted ex) {
+        return error(HttpStatus.TOO_MANY_REQUESTS,
+                "SAP OData rate limit exceeded — too many concurrent calls to the SAP backend. Please retry shortly.");
     }
 
     @ExceptionHandler(ODataClientException.class)

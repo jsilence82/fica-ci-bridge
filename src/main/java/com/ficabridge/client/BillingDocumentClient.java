@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ficabridge.model.odata.ODataBillingDocument;
 import com.ficabridge.model.odata.ODataWrapper;
+import io.github.resilience4j.ratelimiter.RateLimiter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -20,8 +21,8 @@ public class BillingDocumentClient extends ODataClientBase {
             "/sap/opu/odata4/sap/api_cainvoicingdocument/srvd_a2x/sap/cainvoicingdocument/0001/CAInvcgDocument";
     private static final String EXPAND_ITEMS = "_CAInvcgDocItem";
 
-    public BillingDocumentClient(WebClient sapODataWebClient, ObjectMapper objectMapper) {
-        super(sapODataWebClient, objectMapper);
+    public BillingDocumentClient(WebClient sapODataWebClient, ObjectMapper objectMapper, RateLimiter sapODataRateLimiter) {
+        super(sapODataWebClient, objectMapper, sapODataRateLimiter);
     }
 
     /**

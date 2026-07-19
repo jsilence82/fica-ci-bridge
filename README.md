@@ -134,6 +134,40 @@ OAuth2 credentials come from the BTP XSUAA service binding.
 
 ---
 
+## Outbound Rate Limiting
+
+All calls from `ODataClientBase` to the SAP OData backend go through a
+[Resilience4j](https://resilience4j.readme.io/) `RateLimiter` named `sapOData`. This protects the
+SAP system from being overwhelmed by concurrent traffic from this bridge — it is **not** related
+to rate-limiting inbound requests to this service's own REST API.
+
+The limiter wraps the reactive `WebClient` call in `ODataClientBase.fetchList` / `fetchSingle`
+(via `resilience4j-reactor`'s `RateLimiterOperator`) before the response is blocked on. When a
+call can't acquire a permit within `timeout-duration`, Resilience4j throws
+`RequestNotPermitted`, which `GlobalExceptionHandler` maps to `HTTP 429 Too Many Requests` with
+the standard structured error body, rather than letting it surface as an unhandled exception.
+
+Configuration lives in `application.yml`:
+
+```yaml
+resilience4j:
+  ratelimiter:
+    instances:
+      sapOData:
+        limit-for-period: 10       # permits issued per refresh period
+        limit-refresh-period: 1s   # how often the permit bucket refills
+        timeout-duration: 500ms    # how long a caller waits for a permit before failing
+```
+
+**Tuning:** `limit-for-period` / `limit-refresh-period` are starting values, not measured
+figures — increase them once you know the real throughput the target SAP system can sustain
+(check with the SAP Basis/FI-CA team or load-test against a sandbox). `timeout-duration`
+controls the tradeoff between latency and throughput: a short timeout fails fast under load
+(cheap for the caller, cheap for SAP) while a longer timeout smooths out bursts at the cost of
+slower responses when the limiter is saturated.
+
+---
+
 ## Deployment to SAP BTP Cloud Foundry
 
 ```bash

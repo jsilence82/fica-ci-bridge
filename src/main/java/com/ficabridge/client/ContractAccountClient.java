@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ficabridge.model.odata.ODataContractAccount;
 import com.ficabridge.model.odata.ODataWrapper;
+import io.github.resilience4j.ratelimiter.RateLimiter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -15,8 +16,8 @@ public class ContractAccountClient extends ODataClientBase {
 
     private static final String BASE_PATH = "/API_CA_CONTRACTACCOUNT/ContractAccount";
 
-    public ContractAccountClient(WebClient sapODataWebClient, ObjectMapper objectMapper) {
-        super(sapODataWebClient, objectMapper);
+    public ContractAccountClient(WebClient sapODataWebClient, ObjectMapper objectMapper, RateLimiter sapODataRateLimiter) {
+        super(sapODataWebClient, objectMapper, sapODataRateLimiter);
     }
 
     /**
