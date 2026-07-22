@@ -20,6 +20,5 @@ public class InvoiceDTO {
     private InvoiceStatus status;
     private LocalDate clearingDate;
     private String ficaDocNumber;
-    private String idocDocnum;
     private List<InvoiceLineItemDTO> lineItems;
 }

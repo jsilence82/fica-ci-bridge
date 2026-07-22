@@ -13,8 +13,6 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, Long> {
 
     Optional<InvoiceEntity> findByBillingDocNumber(String billingDocNumber);
 
-    Optional<InvoiceEntity> findByIdocDocnum(String idocDocnum);
-
     List<InvoiceEntity> findByContractAccount(String contractAccount);
 
     List<InvoiceEntity> findByStatus(InvoiceStatus status);
@@ -37,8 +35,6 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, Long> {
     Page<InvoiceEntity> findByStatusIn(List<InvoiceStatus> statuses, Pageable pageable);
 
     Page<InvoiceEntity> findByContractAccountAndStatusIn(String contractAccount, List<InvoiceStatus> statuses, Pageable pageable);
-
-    boolean existsByIdocDocnum(String idocDocnum);
 
     boolean existsByBillingDocNumber(String billingDocNumber);
 }
