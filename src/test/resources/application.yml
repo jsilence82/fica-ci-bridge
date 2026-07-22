@@ -10,6 +10,14 @@ spring:
     database-platform: org.hibernate.dialect.H2Dialect
   flyway:
     enabled: false
+  # Mirrors the pagination defaults in src/main/resources/application.yml. Kept here because the
+  # test application.yml shadows the main one on the test classpath (same reason datasource/jpa/
+  # flyway are redefined above), so InvoiceIntegrationTest's clamping assertions need it present.
+  data:
+    web:
+      pageable:
+        default-page-size: 50
+        max-page-size: 200
 
 sap:
   odata:

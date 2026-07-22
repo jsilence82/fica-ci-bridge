@@ -6,8 +6,11 @@ import com.ficabridge.model.dto.InvoiceStatus;
 import com.ficabridge.service.InvoiceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -62,7 +65,8 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void unexpectedException_returns500WithGenericMessage() throws Exception {
-        when(invoiceService.getAll()).thenThrow(new RuntimeException("DB connection lost"));
+        when(invoiceService.getAll(ArgumentMatchers.any(Pageable.class)))
+                .thenThrow(new RuntimeException("DB connection lost"));
 
         mockMvc.perform(get("/api/invoices"))
                 .andExpect(status().isInternalServerError())
@@ -74,7 +78,8 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void errorResponse_doesNotLeakInternalExceptionMessage() throws Exception {
-        when(invoiceService.getAll()).thenThrow(new RuntimeException("sensitive internal detail"));
+        when(invoiceService.getAll(ArgumentMatchers.any(Pageable.class)))
+                .thenThrow(new RuntimeException("sensitive internal detail"));
 
         mockMvc.perform(get("/api/invoices"))
                 .andExpect(status().isInternalServerError())
@@ -83,7 +88,8 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void validStatus_doesNotReturn400() throws Exception {
-        when(invoiceService.getByStatus(InvoiceStatus.OPEN)).thenReturn(java.util.List.of());
+        when(invoiceService.getByStatus(eq(InvoiceStatus.OPEN), ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(Page.empty());
 
         mockMvc.perform(get("/api/invoices").param("status", "OPEN"))
                 .andExpect(status().isOk());

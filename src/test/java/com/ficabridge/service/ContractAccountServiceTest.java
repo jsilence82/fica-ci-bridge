@@ -15,6 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -88,79 +92,62 @@ class ContractAccountServiceTest {
     // ── getAllWithOverdueItems ────────────────────────────────────────────────
 
     @Test
-    void getAllWithOverdueItems_returnsOnlyCAsWithOverdueInvoices() {
+    void getAllWithOverdueItems_mapsPageAndPopulatesOverdueInvoices() {
+        // The repository query already restricts to accounts with an overdue invoice.
         ContractAccountEntity ca1 = new ContractAccountEntity();
         ca1.setContractAccount("100200");
-        ContractAccountEntity ca2 = new ContractAccountEntity();
-        ca2.setContractAccount("100201");
-
         ContractAccountDTO ca1Dto = new ContractAccountDTO();
         ca1Dto.setContractAccount("100200");
-
         List<InvoiceEntity> overdueForCa1 = List.of(new InvoiceEntity());
         List<InvoiceDTO> overdueDtos = List.of(new InvoiceDTO());
+        Pageable pageable = PageRequest.of(0, 50);
 
-        when(contractAccountRepository.findAll()).thenReturn(List.of(ca1, ca2));
+        when(contractAccountRepository.findWithInvoiceStatus(InvoiceStatus.OVERDUE, pageable))
+                .thenReturn(new PageImpl<>(List.of(ca1), pageable, 1));
         when(invoiceRepository.findByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE))
                 .thenReturn(overdueForCa1);
-        when(invoiceRepository.findByContractAccountAndStatus("100201", InvoiceStatus.OVERDUE))
-                .thenReturn(List.of());
         when(contractAccountMapper.toDto(ca1)).thenReturn(ca1Dto);
         when(invoiceMapper.toDtoList(overdueForCa1)).thenReturn(overdueDtos);
 
-        List<ContractAccountDTO> result = service.getAllWithOverdueItems();
+        Page<ContractAccountDTO> result = service.getAllWithOverdueItems(pageable);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getContractAccount()).isEqualTo("100200");
-        assertThat(result.get(0).getInvoices()).hasSize(1);
-        verify(contractAccountMapper, never()).toDto(ca2);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent().get(0).getContractAccount()).isEqualTo("100200");
+        assertThat(result.getContent().get(0).getInvoices()).hasSize(1);
     }
 
     @Test
-    void getAllWithOverdueItems_noOverdueAnywhere_returnsEmptyList() {
-        ContractAccountEntity ca = new ContractAccountEntity();
-        ca.setContractAccount("100200");
+    void getAllWithOverdueItems_emptyPage_returnsEmptyWithoutMapping() {
+        Pageable pageable = PageRequest.of(0, 50);
+        when(contractAccountRepository.findWithInvoiceStatus(InvoiceStatus.OVERDUE, pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        when(contractAccountRepository.findAll()).thenReturn(List.of(ca));
-        when(invoiceRepository.findByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE))
-                .thenReturn(List.of());
-
-        assertThat(service.getAllWithOverdueItems()).isEmpty();
+        assertThat(service.getAllWithOverdueItems(pageable).getContent()).isEmpty();
         verify(contractAccountMapper, never()).toDto(any());
     }
 
     @Test
-    void getAllWithOverdueItems_emptyRepository_returnsEmptyList() {
-        when(contractAccountRepository.findAll()).thenReturn(List.of());
-
-        assertThat(service.getAllWithOverdueItems()).isEmpty();
-    }
-
-    @Test
-    void getAllWithOverdueItems_multipleAccountsAllOverdue_returnsAll() {
+    void getAllWithOverdueItems_multipleAccounts_mapsAllWithTheirOverdueInvoices() {
         ContractAccountEntity ca1 = new ContractAccountEntity();
         ca1.setContractAccount("100200");
         ContractAccountEntity ca2 = new ContractAccountEntity();
         ca2.setContractAccount("100201");
+        Pageable pageable = PageRequest.of(0, 50);
 
-        ContractAccountDTO ca1Dto = new ContractAccountDTO();
-        ContractAccountDTO ca2Dto = new ContractAccountDTO();
-        List<InvoiceEntity> overdue1 = List.of(new InvoiceEntity());
-        List<InvoiceEntity> overdue2 = List.of(new InvoiceEntity(), new InvoiceEntity());
-        List<InvoiceDTO> overdueDtos1 = List.of(new InvoiceDTO());
-        List<InvoiceDTO> overdueDtos2 = List.of(new InvoiceDTO(), new InvoiceDTO());
+        when(contractAccountRepository.findWithInvoiceStatus(InvoiceStatus.OVERDUE, pageable))
+                .thenReturn(new PageImpl<>(List.of(ca1, ca2), pageable, 2));
+        when(invoiceRepository.findByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE))
+                .thenReturn(List.of(new InvoiceEntity()));
+        when(invoiceRepository.findByContractAccountAndStatus("100201", InvoiceStatus.OVERDUE))
+                .thenReturn(List.of(new InvoiceEntity(), new InvoiceEntity()));
+        when(contractAccountMapper.toDto(ca1)).thenReturn(new ContractAccountDTO());
+        when(contractAccountMapper.toDto(ca2)).thenReturn(new ContractAccountDTO());
+        when(invoiceMapper.toDtoList(any())).thenReturn(List.of(new InvoiceDTO()));
 
-        when(contractAccountRepository.findAll()).thenReturn(List.of(ca1, ca2));
-        when(invoiceRepository.findByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE)).thenReturn(overdue1);
-        when(invoiceRepository.findByContractAccountAndStatus("100201", InvoiceStatus.OVERDUE)).thenReturn(overdue2);
-        when(contractAccountMapper.toDto(ca1)).thenReturn(ca1Dto);
-        when(contractAccountMapper.toDto(ca2)).thenReturn(ca2Dto);
-        when(invoiceMapper.toDtoList(overdue1)).thenReturn(overdueDtos1);
-        when(invoiceMapper.toDtoList(overdue2)).thenReturn(overdueDtos2);
+        Page<ContractAccountDTO> result = service.getAllWithOverdueItems(pageable);
 
-        List<ContractAccountDTO> result = service.getAllWithOverdueItems();
-
-        assertThat(result).hasSize(2);
+        assertThat(result.getContent()).hasSize(2);
     }
 
     // ── save ─────────────────────────────────────────────────────────────────

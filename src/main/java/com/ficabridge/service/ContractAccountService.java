@@ -6,14 +6,12 @@ import com.ficabridge.mapper.InvoiceMapper;
 import com.ficabridge.model.dto.ContractAccountDTO;
 import com.ficabridge.model.dto.InvoiceStatus;
 import com.ficabridge.model.entity.ContractAccountEntity;
-import com.ficabridge.model.entity.InvoiceEntity;
 import com.ficabridge.repository.ContractAccountRepository;
 import com.ficabridge.repository.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -32,20 +30,16 @@ public class ContractAccountService {
         return dto;
     }
 
-    public List<ContractAccountDTO> getAllWithOverdueItems() {
-        return contractAccountRepository.findAll().stream()
+    public Page<ContractAccountDTO> getAllWithOverdueItems(Pageable pageable) {
+        // The DB query already restricts to accounts that have an overdue invoice, so only the
+        // page's accounts remain — populate each with its overdue invoices.
+        return contractAccountRepository.findWithInvoiceStatus(InvoiceStatus.OVERDUE, pageable)
                 .map(ca -> {
-                    List<InvoiceEntity> overdue = invoiceRepository.findByContractAccountAndStatus(
-                            ca.getContractAccount(), InvoiceStatus.OVERDUE);
-                    if (overdue.isEmpty()) {
-                        return null;
-                    }
                     ContractAccountDTO dto = contractAccountMapper.toDto(ca);
-                    dto.setInvoices(invoiceMapper.toDtoList(overdue));
+                    dto.setInvoices(invoiceMapper.toDtoList(invoiceRepository.findByContractAccountAndStatus(
+                            ca.getContractAccount(), InvoiceStatus.OVERDUE)));
                     return dto;
-                })
-                .filter(Objects::nonNull)
-                .toList();
+                });
     }
 
     public ContractAccountEntity save(ContractAccountEntity entity) {

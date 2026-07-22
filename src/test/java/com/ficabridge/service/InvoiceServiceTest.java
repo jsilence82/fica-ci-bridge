@@ -11,6 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,22 +61,29 @@ class InvoiceServiceTest {
     // ── getAll ───────────────────────────────────────────────────────────────
 
     @Test
-    void getAll_returnsMappedList() {
+    void getAll_returnsMappedPage_preservingTotals() {
         List<InvoiceEntity> entities = List.of(new InvoiceEntity(), new InvoiceEntity());
-        List<InvoiceDTO> dtos = List.of(new InvoiceDTO(), new InvoiceDTO());
+        Pageable pageable = PageRequest.of(0, 50);
 
-        when(invoiceRepository.findAll()).thenReturn(entities);
-        when(invoiceMapper.toDtoList(entities)).thenReturn(dtos);
+        when(invoiceRepository.findAll(pageable)).thenReturn(new PageImpl<>(entities, pageable, 2));
+        when(invoiceMapper.toDto(any(InvoiceEntity.class))).thenReturn(new InvoiceDTO());
 
-        assertThat(service.getAll()).hasSize(2);
+        Page<InvoiceDTO> result = service.getAll(pageable);
+
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        verify(invoiceRepository).findAll(pageable);
     }
 
     @Test
-    void getAll_emptyRepository_returnsEmptyList() {
-        when(invoiceRepository.findAll()).thenReturn(List.of());
-        when(invoiceMapper.toDtoList(List.of())).thenReturn(List.of());
+    void getAll_emptyRepository_returnsEmptyPage() {
+        Pageable pageable = PageRequest.of(0, 50);
+        when(invoiceRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        assertThat(service.getAll()).isEmpty();
+        Page<InvoiceDTO> result = service.getAll(pageable);
+
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isZero();
     }
 
     // ── getByContractAccount ─────────────────────────────────────────────────
@@ -81,71 +92,70 @@ class InvoiceServiceTest {
     void getByContractAccount_returnsMatchingInvoices() {
         InvoiceEntity entity = new InvoiceEntity();
         entity.setContractAccount("100200");
-        List<InvoiceEntity> entities = List.of(entity);
-        List<InvoiceDTO> dtos = List.of(new InvoiceDTO());
+        Pageable pageable = PageRequest.of(0, 50);
 
-        when(invoiceRepository.findByContractAccount("100200")).thenReturn(entities);
-        when(invoiceMapper.toDtoList(entities)).thenReturn(dtos);
+        when(invoiceRepository.findByContractAccount("100200", pageable))
+                .thenReturn(new PageImpl<>(List.of(entity), pageable, 1));
+        when(invoiceMapper.toDto(any(InvoiceEntity.class))).thenReturn(new InvoiceDTO());
 
-        assertThat(service.getByContractAccount("100200")).hasSize(1);
-        verify(invoiceRepository).findByContractAccount("100200");
+        assertThat(service.getByContractAccount("100200", pageable).getContent()).hasSize(1);
+        verify(invoiceRepository).findByContractAccount("100200", pageable);
     }
 
     @Test
-    void getByContractAccount_noMatches_returnsEmptyList() {
-        when(invoiceRepository.findByContractAccount("999")).thenReturn(List.of());
-        when(invoiceMapper.toDtoList(List.of())).thenReturn(List.of());
+    void getByContractAccount_noMatches_returnsEmptyPage() {
+        Pageable pageable = PageRequest.of(0, 50);
+        when(invoiceRepository.findByContractAccount("999", pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        assertThat(service.getByContractAccount("999")).isEmpty();
+        assertThat(service.getByContractAccount("999", pageable).getContent()).isEmpty();
     }
 
     // ── getByStatus ──────────────────────────────────────────────────────────
 
     @Test
     void getByStatus_open_returnsOpenInvoices() {
-        List<InvoiceEntity> entities = List.of(new InvoiceEntity());
-        List<InvoiceDTO> dtos = List.of(new InvoiceDTO());
+        Pageable pageable = PageRequest.of(0, 50);
+        when(invoiceRepository.findByStatus(InvoiceStatus.OPEN, pageable))
+                .thenReturn(new PageImpl<>(List.of(new InvoiceEntity()), pageable, 1));
+        when(invoiceMapper.toDto(any(InvoiceEntity.class))).thenReturn(new InvoiceDTO());
 
-        when(invoiceRepository.findByStatus(InvoiceStatus.OPEN)).thenReturn(entities);
-        when(invoiceMapper.toDtoList(entities)).thenReturn(dtos);
-
-        assertThat(service.getByStatus(InvoiceStatus.OPEN)).hasSize(1);
-        verify(invoiceRepository).findByStatus(InvoiceStatus.OPEN);
+        assertThat(service.getByStatus(InvoiceStatus.OPEN, pageable).getContent()).hasSize(1);
+        verify(invoiceRepository).findByStatus(InvoiceStatus.OPEN, pageable);
     }
 
     @Test
     void getByStatus_overdue_returnsOverdueInvoices() {
-        List<InvoiceEntity> entities = List.of(new InvoiceEntity(), new InvoiceEntity());
-        List<InvoiceDTO> dtos = List.of(new InvoiceDTO(), new InvoiceDTO());
+        Pageable pageable = PageRequest.of(0, 50);
+        when(invoiceRepository.findByStatus(InvoiceStatus.OVERDUE, pageable))
+                .thenReturn(new PageImpl<>(List.of(new InvoiceEntity(), new InvoiceEntity()), pageable, 2));
+        when(invoiceMapper.toDto(any(InvoiceEntity.class))).thenReturn(new InvoiceDTO());
 
-        when(invoiceRepository.findByStatus(InvoiceStatus.OVERDUE)).thenReturn(entities);
-        when(invoiceMapper.toDtoList(entities)).thenReturn(dtos);
-
-        assertThat(service.getByStatus(InvoiceStatus.OVERDUE)).hasSize(2);
+        assertThat(service.getByStatus(InvoiceStatus.OVERDUE, pageable).getContent()).hasSize(2);
     }
 
     // ── getByContractAccountAndStatus ────────────────────────────────────────
 
     @Test
     void getByContractAccountAndStatus_returnsFiltered() {
-        List<InvoiceEntity> entities = List.of(new InvoiceEntity());
-        List<InvoiceDTO> dtos = List.of(new InvoiceDTO());
+        Pageable pageable = PageRequest.of(0, 50);
+        when(invoiceRepository.findByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE, pageable))
+                .thenReturn(new PageImpl<>(List.of(new InvoiceEntity()), pageable, 1));
+        when(invoiceMapper.toDto(any(InvoiceEntity.class))).thenReturn(new InvoiceDTO());
 
-        when(invoiceRepository.findByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE))
-                .thenReturn(entities);
-        when(invoiceMapper.toDtoList(entities)).thenReturn(dtos);
-
-        assertThat(service.getByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE)).hasSize(1);
-        verify(invoiceRepository).findByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE);
+        assertThat(service.getByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE, pageable).getContent())
+                .hasSize(1);
+        verify(invoiceRepository).findByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE, pageable);
     }
 
     @Test
-    void getByContractAccountAndStatus_noMatches_returnsEmptyList() {
-        when(invoiceRepository.findByContractAccountAndStatus("100200", InvoiceStatus.CLEARED))
-                .thenReturn(List.of());
-        when(invoiceMapper.toDtoList(List.of())).thenReturn(List.of());
+    void getByContractAccountAndStatus_noMatches_returnsEmptyPage() {
+        Pageable pageable = PageRequest.of(0, 50);
+        when(invoiceRepository.findByContractAccountAndStatus("100200", InvoiceStatus.CLEARED, pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        assertThat(service.getByContractAccountAndStatus("100200", InvoiceStatus.CLEARED)).isEmpty();
+        assertThat(service.getByContractAccountAndStatus("100200", InvoiceStatus.CLEARED, pageable).getContent())
+                .isEmpty();
     }
 
     // ── save ─────────────────────────────────────────────────────────────────

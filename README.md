@@ -78,15 +78,36 @@ Full field-level detail for each API is in
 
 ## REST API
 
-| Method | Path                                  | Description                                       |
-|--------|---------------------------------------|----------------------------------------------------|
-| GET    | `/api/invoices`                       | List billing documents                             |
-| GET    | `/api/invoices/{billingDocument}`     | Single billing document with items                 |
-| GET    | `/api/contract-accounts/{vkont}`      | Contract account master data                       |
-| GET    | `/api/contract-accounts/overdue`      | Contract accounts with at least one OVERDUE invoice |
-| GET    | `/api/payments`                       | Open FI-CA items (receivables)                     |
+| Method | Path                                  | Description                                       | Paged |
+|--------|---------------------------------------|----------------------------------------------------|-------|
+| GET    | `/api/invoices`                       | List billing documents                             | ✅    |
+| GET    | `/api/invoices/{billingDocument}`     | Single billing document with items                 | —     |
+| GET    | `/api/contract-accounts/{vkont}`      | Contract account master data                       | —     |
+| GET    | `/api/contract-accounts/overdue`      | Contract accounts with at least one OVERDUE invoice | ✅    |
+| GET    | `/api/payments`                       | Open FI-CA items (receivables)                     | ✅    |
 
 Swagger UI is available at `/swagger-ui.html` when the application is running.
+
+### Pagination
+
+All three list endpoints — `GET /api/invoices`, `GET /api/payments`, and
+`GET /api/contract-accounts/overdue` — accept standard Spring Data paging params:
+`?page=0&size=20&sort=dueDate,desc`. Page size defaults to **50** and is capped at **200**
+(`spring.data.web.pageable.*` in `application.yml`), so a caller can't force an effectively
+unbounded query with an oversized `size`. Responses are a `PagedModel` wrapper with a stable
+shape:
+
+```json
+{
+  "content": [ { "billingDocNumber": "...", "status": "OPEN", ... } ],
+  "page": { "size": 50, "number": 0, "totalElements": 3, "totalPages": 1 }
+}
+```
+
+Paging is pushed to the database in every case. For `/api/contract-accounts/overdue` — where the
+account and invoice tables share no JPA relationship — the repository uses a correlated `exists`
+subquery (`ContractAccountRepository.findWithInvoiceStatus`) so the filter and page count run in
+the DB rather than loading every account to filter in memory.
 
 ---
 
@@ -378,7 +399,6 @@ intentionally out of scope and would need to be addressed before any real deploy
 | **Discovery sync not implemented** | `DocumentSyncScheduler` (see [Document Sync](#document-sync)) keeps *known* invoices' clearing status current, but nothing discovers invoices SAP has posted that the cache has never seen — REST endpoints only ever reflect what's been manually seeded or already synced once |
 | **Sync is single-instance only** | No distributed lock; unsafe to run with more than one replica against a real SAP backend — see [Document Sync](#document-sync) |
 | **No authentication** | All endpoints are `permitAll()`; Basic Auth (local) and XSUAA JWT (BTP) are not wired |
-| **No pagination** | List endpoints return unbounded result sets |
 | **`clearingDate` always null** | `InvoiceDTO.clearingDate` is never populated — requires `API_CABUSPARTINVOICE` item-level clearing data |
 | **`idocDocnum` artifact** | `InvoiceEntity` carries an IDoc deduplication field that has no natural value in an OData-sourced system |
 | **CSRF token not fetched** | Required before any mutation is introduced; deferred because the bridge is currently read-only |

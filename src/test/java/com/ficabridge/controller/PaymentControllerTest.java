@@ -6,9 +6,12 @@ import com.ficabridge.model.dto.InvoiceDTO;
 import com.ficabridge.model.dto.InvoiceStatus;
 import com.ficabridge.service.OpenItemService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,61 +36,68 @@ class PaymentControllerTest {
     void getOpenItems_noParams_delegatesToGetAllOpenItems() throws Exception {
         InvoiceDTO open = openItem("90001234", "100200", InvoiceStatus.OPEN, "850.00");
         InvoiceDTO overdue = openItem("90002345", "100201", InvoiceStatus.OVERDUE, "400.00");
-        when(openItemService.getAllOpenItems()).thenReturn(List.of(open, overdue));
+        when(openItemService.getAllOpenItems(ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(open, overdue)));
 
         mockMvc.perform(get("/api/payments"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].billingDocNumber", is("90001234")))
-                .andExpect(jsonPath("$[0].status", is("OPEN")))
-                .andExpect(jsonPath("$[1].status", is("OVERDUE")));
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].billingDocNumber", is("90001234")))
+                .andExpect(jsonPath("$.content[0].status", is("OPEN")))
+                .andExpect(jsonPath("$.content[1].status", is("OVERDUE")))
+                .andExpect(jsonPath("$.page.totalElements", is(2)));
 
-        verify(openItemService).getAllOpenItems();
+        verify(openItemService).getAllOpenItems(ArgumentMatchers.any(Pageable.class));
         verifyNoMoreInteractions(openItemService);
     }
 
     @Test
     void getOpenItems_withContractAccount_delegatesToGetOpenItemsByContractAccount() throws Exception {
         InvoiceDTO dto = openItem("90001234", "100200", InvoiceStatus.OPEN, "850.00");
-        when(openItemService.getOpenItemsByContractAccount("100200")).thenReturn(List.of(dto));
+        when(openItemService.getOpenItemsByContractAccount(eq("100200"), ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/payments").param("contractAccount", "100200"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].contractAccount", is("100200")));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].contractAccount", is("100200")));
 
-        verify(openItemService).getOpenItemsByContractAccount("100200");
+        verify(openItemService).getOpenItemsByContractAccount(eq("100200"), ArgumentMatchers.any(Pageable.class));
         verifyNoMoreInteractions(openItemService);
     }
 
     @Test
-    void getOpenItems_emptyResult_returns200WithEmptyArray() throws Exception {
-        when(openItemService.getAllOpenItems()).thenReturn(List.of());
+    void getOpenItems_emptyResult_returns200WithEmptyContent() throws Exception {
+        when(openItemService.getAllOpenItems(ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/payments"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
+                .andExpect(jsonPath("$.content", hasSize(0)))
+                .andExpect(jsonPath("$.page.totalElements", is(0)));
     }
 
     @Test
-    void getOpenItems_contractAccountWithNoOpenItems_returns200WithEmptyArray() throws Exception {
-        when(openItemService.getOpenItemsByContractAccount("100200")).thenReturn(List.of());
+    void getOpenItems_contractAccountWithNoOpenItems_returns200WithEmptyContent() throws Exception {
+        when(openItemService.getOpenItemsByContractAccount(eq("100200"), ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/payments").param("contractAccount", "100200"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
+                .andExpect(jsonPath("$.content", hasSize(0)));
     }
 
     @Test
     void getOpenItems_amountAndCurrencySerialised() throws Exception {
         InvoiceDTO dto = openItem("90001234", "100200", InvoiceStatus.OVERDUE, "1250.50");
         dto.setCurrency("EUR");
-        when(openItemService.getAllOpenItems()).thenReturn(List.of(dto));
+        when(openItemService.getAllOpenItems(ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/payments"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].amount", is(1250.50)))
-                .andExpect(jsonPath("$[0].currency", is("EUR")));
+                .andExpect(jsonPath("$.content[0].amount", is(1250.50)))
+                .andExpect(jsonPath("$.content[0].currency", is("EUR")));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

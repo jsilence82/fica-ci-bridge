@@ -19,6 +19,15 @@ spring:
     deserialization:
       fail-on-unknown-properties: false
 
+  # Pagination defaults for list endpoints (currently GET /api/invoices). An unspecified size
+  # falls back to 50; a requested size above 200 is capped to 200 so a caller can't force an
+  # effectively unbounded query. Applied globally via Spring Data's Pageable argument resolver.
+  data:
+    web:
+      pageable:
+        default-page-size: 50
+        max-page-size: 200
+
   # JAXB XML message converter — required for IDoc inbound and ALE acknowledgement responses
   mvc:
     converters:

@@ -9,7 +9,10 @@ import com.ficabridge.service.InvoiceService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.mockito.ArgumentMatchers;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,82 +37,87 @@ class InvoiceControllerTest {
     @Test
     void getInvoices_noParams_delegatesToGetAll() throws Exception {
         InvoiceDTO dto = invoiceDto("90001234", "100200", InvoiceStatus.OPEN);
-        when(invoiceService.getAll()).thenReturn(List.of(dto));
+        when(invoiceService.getAll(ArgumentMatchers.any(Pageable.class))).thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/invoices"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].billingDocNumber", is("90001234")))
-                .andExpect(jsonPath("$[0].status", is("OPEN")));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].billingDocNumber", is("90001234")))
+                .andExpect(jsonPath("$.content[0].status", is("OPEN")))
+                .andExpect(jsonPath("$.page.totalElements", is(1)));
 
-        verify(invoiceService).getAll();
+        verify(invoiceService).getAll(ArgumentMatchers.any(Pageable.class));
         verifyNoMoreInteractions(invoiceService);
     }
 
     @Test
     void getInvoices_contractAccountOnly_delegatesToGetByContractAccount() throws Exception {
         InvoiceDTO dto = invoiceDto("90001234", "100200", InvoiceStatus.OPEN);
-        when(invoiceService.getByContractAccount("100200")).thenReturn(List.of(dto));
+        when(invoiceService.getByContractAccount(eq("100200"), ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/invoices").param("contractAccount", "100200"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].contractAccount", is("100200")));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].contractAccount", is("100200")));
 
-        verify(invoiceService).getByContractAccount("100200");
+        verify(invoiceService).getByContractAccount(eq("100200"), ArgumentMatchers.any(Pageable.class));
         verifyNoMoreInteractions(invoiceService);
     }
 
     @Test
     void getInvoices_statusOnly_delegatesToGetByStatus() throws Exception {
         InvoiceDTO dto = invoiceDto("90002345", "100201", InvoiceStatus.OVERDUE);
-        when(invoiceService.getByStatus(InvoiceStatus.OVERDUE)).thenReturn(List.of(dto));
+        when(invoiceService.getByStatus(eq(InvoiceStatus.OVERDUE), ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/invoices").param("status", "OVERDUE"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].status", is("OVERDUE")));
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].status", is("OVERDUE")));
 
-        verify(invoiceService).getByStatus(InvoiceStatus.OVERDUE);
+        verify(invoiceService).getByStatus(eq(InvoiceStatus.OVERDUE), ArgumentMatchers.any(Pageable.class));
         verifyNoMoreInteractions(invoiceService);
     }
 
     @Test
     void getInvoices_bothParams_delegatesToGetByContractAccountAndStatus() throws Exception {
         InvoiceDTO dto = invoiceDto("90003456", "100200", InvoiceStatus.OVERDUE);
-        when(invoiceService.getByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE))
-                .thenReturn(List.of(dto));
+        when(invoiceService.getByContractAccountAndStatus(eq("100200"), eq(InvoiceStatus.OVERDUE), ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(dto)));
 
         mockMvc.perform(get("/api/invoices")
                         .param("contractAccount", "100200")
                         .param("status", "OVERDUE"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)));
+                .andExpect(jsonPath("$.content", hasSize(1)));
 
-        verify(invoiceService).getByContractAccountAndStatus("100200", InvoiceStatus.OVERDUE);
+        verify(invoiceService).getByContractAccountAndStatus(eq("100200"), eq(InvoiceStatus.OVERDUE), ArgumentMatchers.any(Pageable.class));
         verifyNoMoreInteractions(invoiceService);
     }
 
     @Test
-    void getInvoices_emptyResult_returns200WithEmptyArray() throws Exception {
-        when(invoiceService.getAll()).thenReturn(List.of());
+    void getInvoices_emptyResult_returns200WithEmptyContent() throws Exception {
+        when(invoiceService.getAll(ArgumentMatchers.any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/invoices"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
+                .andExpect(jsonPath("$.content", hasSize(0)))
+                .andExpect(jsonPath("$.page.totalElements", is(0)));
     }
 
     @Test
     void getInvoices_multipleResults_returnsAll() throws Exception {
-        when(invoiceService.getAll()).thenReturn(List.of(
+        when(invoiceService.getAll(ArgumentMatchers.any(Pageable.class))).thenReturn(new PageImpl<>(List.of(
                 invoiceDto("90001111", "100200", InvoiceStatus.OPEN),
                 invoiceDto("90002222", "100200", InvoiceStatus.CLEARED),
                 invoiceDto("90003333", "100201", InvoiceStatus.OVERDUE)
-        ));
+        )));
 
         mockMvc.perform(get("/api/invoices"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)));
+                .andExpect(jsonPath("$.content", hasSize(3)))
+                .andExpect(jsonPath("$.page.totalElements", is(3)));
     }
 
     // ── GET /api/invoices/{billingDocNumber} ─────────────────────────────────
