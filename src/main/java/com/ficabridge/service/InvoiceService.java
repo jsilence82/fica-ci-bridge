@@ -7,9 +7,9 @@ import com.ficabridge.model.dto.InvoiceStatus;
 import com.ficabridge.model.entity.InvoiceEntity;
 import com.ficabridge.repository.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,20 +24,20 @@ public class InvoiceService {
         return invoiceMapper.toDto(entity);
     }
 
-    public List<InvoiceDTO> getAll() {
-        return invoiceMapper.toDtoList(invoiceRepository.findAll());
+    public Page<InvoiceDTO> getAll(Pageable pageable) {
+        return invoiceRepository.findAll(pageable).map(invoiceMapper::toDto);
     }
 
-    public List<InvoiceDTO> getByContractAccount(String contractAccount) {
-        return invoiceMapper.toDtoList(invoiceRepository.findByContractAccount(contractAccount));
+    public Page<InvoiceDTO> getByContractAccount(String contractAccount, Pageable pageable) {
+        return invoiceRepository.findByContractAccount(contractAccount, pageable).map(invoiceMapper::toDto);
     }
 
-    public List<InvoiceDTO> getByStatus(InvoiceStatus status) {
-        return invoiceMapper.toDtoList(invoiceRepository.findByStatus(status));
+    public Page<InvoiceDTO> getByStatus(InvoiceStatus status, Pageable pageable) {
+        return invoiceRepository.findByStatus(status, pageable).map(invoiceMapper::toDto);
     }
 
-    public List<InvoiceDTO> getByContractAccountAndStatus(String contractAccount, InvoiceStatus status) {
-        return invoiceMapper.toDtoList(invoiceRepository.findByContractAccountAndStatus(contractAccount, status));
+    public Page<InvoiceDTO> getByContractAccountAndStatus(String contractAccount, InvoiceStatus status, Pageable pageable) {
+        return invoiceRepository.findByContractAccountAndStatus(contractAccount, status, pageable).map(invoiceMapper::toDto);
     }
 
     public InvoiceEntity save(InvoiceEntity entity) {

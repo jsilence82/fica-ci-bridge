@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,30 +76,57 @@ class ContractAccountIntegrationTest {
         assertThat(response.getBody()).containsKey("error");
     }
 
-    // ── GET /api/contract-accounts/overdue ────────────────────────────────────
+    // ── GET /api/contract-accounts/overdue (paged) ────────────────────────────
 
     @Test
     void getOverdue_returnsOnlyAccountsWithOverdueInvoices() {
-        ResponseEntity<Object[]> response =
-                restTemplate.getForEntity("/api/contract-accounts/overdue", Object[].class);
+        Map<String, Object> body = getPaged("/api/contract-accounts/overdue");
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         // CA 200001 has an OVERDUE invoice; CA 200002 only has CLEARED — not included
-        assertThat(response.getBody()).hasSize(1);
+        assertThat(content(body)).hasSize(1);
+        assertThat(pageMeta(body).get("totalElements")).isEqualTo(1);
     }
 
     @Test
-    void getOverdue_whenNoOverdueInvoices_returnsEmptyArray() {
+    void getOverdue_whenNoOverdueInvoices_returnsEmptyContent() {
         invoiceRepository.deleteAll();
 
-        ResponseEntity<Object[]> response =
-                restTemplate.getForEntity("/api/contract-accounts/overdue", Object[].class);
+        assertThat(content(getPaged("/api/contract-accounts/overdue"))).isEmpty();
+    }
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEmpty();
+    @Test
+    void getOverdue_responseIncludesPagingMetadata() {
+        Map<String, Object> page = pageMeta(getPaged("/api/contract-accounts/overdue"));
+
+        assertThat(page.get("number")).isEqualTo(0);
+        assertThat(page.get("size")).isEqualTo(50);
+    }
+
+    @Test
+    void getOverdue_sizeAboveMax_isClampedTo200() {
+        assertThat(pageMeta(getPaged("/api/contract-accounts/overdue?size=9999")).get("size"))
+                .isEqualTo(200);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getPaged(String url) {
+        ResponseEntity<Map<String, Object>> response =
+                restTemplate.getForEntity(url, (Class<Map<String, Object>>) (Class<?>) Map.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        return response.getBody();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Object> content(Map<String, Object> body) {
+        return (List<Object>) body.get("content");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> pageMeta(Map<String, Object> body) {
+        return (Map<String, Object>) body.get("page");
+    }
 
     private InvoiceEntity invoice(String idocDocnum, String billingDocNumber,
                                   String contractAccount, String businessPartner,

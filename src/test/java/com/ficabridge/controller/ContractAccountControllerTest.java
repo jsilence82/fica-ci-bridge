@@ -8,9 +8,12 @@ import com.ficabridge.model.dto.InvoiceDTO;
 import com.ficabridge.model.dto.InvoiceStatus;
 import com.ficabridge.service.ContractAccountService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -83,22 +86,25 @@ class ContractAccountControllerTest {
         ContractAccountDTO ca2 = contractAccountDto("100201", "5679");
         ca2.setInvoices(List.of(new InvoiceDTO()));
 
-        when(contractAccountService.getAllWithOverdueItems()).thenReturn(List.of(ca1, ca2));
+        when(contractAccountService.getAllWithOverdueItems(ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(ca1, ca2)));
 
         mockMvc.perform(get("/api/contract-accounts/overdue"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].contractAccount", is("100200")))
-                .andExpect(jsonPath("$[0].invoices[0].status", is("OVERDUE")));
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].contractAccount", is("100200")))
+                .andExpect(jsonPath("$.content[0].invoices[0].status", is("OVERDUE")))
+                .andExpect(jsonPath("$.page.totalElements", is(2)));
     }
 
     @Test
-    void getOverdue_noOverdueAccounts_returns200WithEmptyArray() throws Exception {
-        when(contractAccountService.getAllWithOverdueItems()).thenReturn(List.of());
+    void getOverdue_noOverdueAccounts_returns200WithEmptyContent() throws Exception {
+        when(contractAccountService.getAllWithOverdueItems(ArgumentMatchers.any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of()));
 
         mockMvc.perform(get("/api/contract-accounts/overdue"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(0)));
+                .andExpect(jsonPath("$.content", hasSize(0)));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

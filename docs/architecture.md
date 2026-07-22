@@ -107,11 +107,19 @@ replaced by an event-driven consumer without `service/` or `controller/` changin
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/invoices` | List billing documents; filterable by contract account |
+| GET | `/api/invoices` | List billing documents; filterable by contract account; **paged** (`page`/`size`/`sort`) |
 | GET | `/api/invoices/{billingDocument}` | Single billing document with line items |
 | GET | `/api/contract-accounts/{vkont}` | Contract account master data |
-| GET | `/api/contract-accounts/overdue` | Contract accounts with at least one OVERDUE invoice |
-| GET | `/api/payments` | Open FI-CA items (receivables) |
+| GET | `/api/contract-accounts/overdue` | Contract accounts with at least one OVERDUE invoice; **paged** (`page`/`size`/`sort`) |
+| GET | `/api/payments` | Open FI-CA items (receivables); **paged** (`page`/`size`/`sort`) |
+
+All three list endpoints return a `PagedModel<T>` (`{ content, page: { size, number,
+totalElements, totalPages } }`); page size defaults to 50 and is capped at 200 via
+`spring.data.web.pageable.*`. Paging is pushed to the database — the service calls
+`Page`-returning repository methods and maps with `Page.map(...)`, never fetching a full list to
+slice in memory. `/api/contract-accounts/overdue` filters via a correlated `exists` subquery
+(`ContractAccountRepository.findWithInvoiceStatus`) since the account and invoice tables share no
+JPA relationship.
 
 ---
 
