@@ -43,8 +43,4 @@ public class InvoiceService {
     public InvoiceEntity save(InvoiceEntity entity) {
         return invoiceRepository.save(entity);
     }
-
-    public boolean existsByIdocDocnum(String idocDocnum) {
-        return invoiceRepository.existsByIdocDocnum(idocDocnum);
-    }
 }

@@ -175,7 +175,7 @@ Two design points that aren't obvious from the code alone:
   system, including `DocumentChangeIngester`, actually uses.
 
 **Explicitly out of scope for this job:** discovering invoices SAP has posted that the cache
-has never seen (a cache miss is treated as an error, not an insert — see
+has never seen (a cache miss is skipped and logged, not inserted and not thrown — see
 `JpaDocumentChangeIngester`), and any event-driven consumer implementation. Both are described
 as future work in the README's [Document Sync](../README.md#document-sync) section, which is
 also the authoritative source for this job's known limitations (single-instance-only

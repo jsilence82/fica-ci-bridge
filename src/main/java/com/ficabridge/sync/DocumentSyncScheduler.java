@@ -53,39 +53,46 @@ public class DocumentSyncScheduler {
     @Scheduled(initialDelayString = "${sync.initial-delay:PT1H}", fixedDelayString = "${sync.poll-interval:PT1H}")
     void syncOpenDocuments() {
         SyncRunEntity run = SyncRunEntity.started();
+        try {
+            List<InvoiceEntity> openDocs = invoiceRepository.findByStatusIn(
+                    List.of(InvoiceStatus.OPEN, InvoiceStatus.OVERDUE));
 
-        List<InvoiceEntity> openDocs = invoiceRepository.findByStatusIn(
-                List.of(InvoiceStatus.OPEN, InvoiceStatus.OVERDUE));
+            Map<String, List<InvoiceEntity>> byContractAccount = openDocs.stream()
+                    .collect(Collectors.groupingBy(InvoiceEntity::getContractAccount));
 
-        Map<String, List<InvoiceEntity>> byContractAccount = openDocs.stream()
-                .collect(Collectors.groupingBy(InvoiceEntity::getContractAccount));
+            List<DocumentChange> changes = new ArrayList<>();
+            String failureReason = null;
 
-        List<DocumentChange> changes = new ArrayList<>();
-        String failureReason = null;
-
-        for (Map.Entry<String, List<InvoiceEntity>> entry : byContractAccount.entrySet()) {
-            try {
-                // one call per contract account, not one per document. Deliberately unfiltered by
-                // clearing status — findOpenItemsByContractAccount's server-side "still open" filter
-                // would hide exactly the documents that transitioned out of OPEN/OVERDUE, which is
-                // what this job exists to detect.
-                List<ODataFicaDocument> current = ficaDocumentClient.findByContractAccount(entry.getKey());
-                changes.addAll(diff(entry.getValue(), current));
-            } catch (ODataClientException e) {
-                // one failed contract account must not poison the rest of the batch or the next run
-                failureReason = e.getMessage();
-                log.warn("Document sync failed for contract account {}: {}", entry.getKey(), e.getMessage());
+            for (Map.Entry<String, List<InvoiceEntity>> entry : byContractAccount.entrySet()) {
+                try {
+                    // one call per contract account, not one per document. Deliberately unfiltered by
+                    // clearing status — findOpenItemsByContractAccount's server-side "still open" filter
+                    // would hide exactly the documents that transitioned out of OPEN/OVERDUE, which is
+                    // what this job exists to detect.
+                    List<ODataFicaDocument> current = ficaDocumentClient.findByContractAccount(entry.getKey());
+                    changes.addAll(diff(entry.getValue(), current));
+                } catch (ODataClientException e) {
+                    // one failed contract account must not poison the rest of the batch or the next run
+                    failureReason = e.getMessage();
+                    log.warn("Document sync failed for contract account {}: {}", entry.getKey(), e.getMessage());
+                }
             }
-        }
 
-        ingester.ingest(changes);
+            ingester.ingest(changes);
 
-        if (failureReason != null) {
-            run.failed(failureReason);
-        } else {
-            run.completed(openDocs.size(), changes.size());
+            if (failureReason != null) {
+                run.failed(failureReason);
+            } else {
+                run.completed(openDocs.size(), changes.size());
+            }
+        } catch (RuntimeException e) {
+            // anything the per-account loop didn't already handle (e.g. an ingest/DB failure) still
+            // records a FAILED run rather than leaving it orphaned in RUNNING and killing the thread.
+            log.error("Document sync run failed", e);
+            run.failed(e.getMessage());
+        } finally {
+            syncRunRepository.save(run);
         }
-        syncRunRepository.save(run);
     }
 
     /**

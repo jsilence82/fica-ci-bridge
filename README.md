@@ -29,12 +29,13 @@ S/4HANA OData APIs
   │                          │  BillingDocumentClient
   │   Base: ODataClientBase  │  (shared $filter/$expand logic)
   └──────────┬───────────────┘
-             │  Clean domain DTOs only — source not visible below
+             │  Raw ODataXxx objects (SAP-shaped)
              ▼
   ┌──────────────────────────┐
   │   Transformer Layer      │  SAP field names → English domain fields
   │   (transformer/)         │  SAP dates / amounts / zero-padding
   └──────────┬───────────────┘
+             │  Clean domain DTOs only — source not visible below
              ▼
   ┌──────────────────────────┐
   │   Service Layer          │  Input-agnostic orchestration
@@ -217,8 +218,10 @@ had no writer for — see [Scope & Limitations](#scope--limitations) for what it
 
 **Scope — status transitions only.** This job assumes the invoice is already in the cache; it
 does not discover invoices SAP has posted that the cache has never seen. `JpaDocumentChangeIngester`
-throws `ResourceNotFoundException` rather than inserting on a cache miss. Discovery sync is
-separate, later work with a different (likely lazier) cadence.
+**skips and logs** a change whose invoice isn't cached rather than inserting it — and deliberately
+not by throwing, since a throw would roll back the whole `@Transactional` batch and let one unknown
+document discard every legitimate transition in the same call. Discovery sync is separate, later
+work with a different (likely lazier) cadence.
 
 **The seam.** `DocumentChangeIngester` is the only path from "something learned a document
 changed" to "the cache gets updated." A future event-driven source (SAP Event Mesh, an
@@ -400,7 +403,6 @@ intentionally out of scope and would need to be addressed before any real deploy
 | **Sync is single-instance only** | No distributed lock; unsafe to run with more than one replica against a real SAP backend — see [Document Sync](#document-sync) |
 | **No authentication** | All endpoints are `permitAll()`; Basic Auth (local) and XSUAA JWT (BTP) are not wired |
 | **`clearingDate` always null** | `InvoiceDTO.clearingDate` is never populated — requires `API_CABUSPARTINVOICE` item-level clearing data |
-| **`idocDocnum` artifact** | `InvoiceEntity` carries an IDoc deduplication field that has no natural value in an OData-sourced system |
 | **CSRF token not fetched** | Required before any mutation is introduced; deferred because the bridge is currently read-only |
 
 ---

@@ -42,11 +42,11 @@ class ContractAccountIntegrationTest {
         ca2.setBusinessPartner("100002");
         contractAccountRepository.save(ca2);
 
-        invoiceRepository.save(invoice("IDOC001", "90001001", "200001", "100001",
+        invoiceRepository.save(invoice("90001001", "200001", "100001",
                 InvoiceStatus.OVERDUE, "143.40", "EUR", LocalDate.now().minusDays(10)));
-        invoiceRepository.save(invoice("IDOC002", "90001002", "200001", "100001",
+        invoiceRepository.save(invoice("90001002", "200001", "100001",
                 InvoiceStatus.OPEN, "98.00", "EUR", LocalDate.now().plusDays(15)));
-        invoiceRepository.save(invoice("IDOC003", "90002001", "200002", "100002",
+        invoiceRepository.save(invoice("90002001", "200002", "100002",
                 InvoiceStatus.CLEARED, "220.00", "EUR", LocalDate.now().minusDays(60)));
     }
 
@@ -128,12 +128,11 @@ class ContractAccountIntegrationTest {
         return (Map<String, Object>) body.get("page");
     }
 
-    private InvoiceEntity invoice(String idocDocnum, String billingDocNumber,
+    private InvoiceEntity invoice(String billingDocNumber,
                                   String contractAccount, String businessPartner,
                                   InvoiceStatus status, String amount, String currency,
                                   LocalDate dueDate) {
         InvoiceEntity e = new InvoiceEntity();
-        e.setIdocDocnum(idocDocnum);
         e.setBillingDocNumber(billingDocNumber);
         e.setContractAccount(contractAccount);
         e.setBusinessPartner(businessPartner);

@@ -168,18 +168,4 @@ class InvoiceServiceTest {
         assertThat(service.save(entity)).isSameAs(entity);
         verify(invoiceRepository).save(entity);
     }
-
-    // ── existsByIdocDocnum ───────────────────────────────────────────────────
-
-    @Test
-    void existsByIdocDocnum_returnsTrue_whenExists() {
-        when(invoiceRepository.existsByIdocDocnum("DOC001")).thenReturn(true);
-        assertThat(service.existsByIdocDocnum("DOC001")).isTrue();
-    }
-
-    @Test
-    void existsByIdocDocnum_returnsFalse_whenNotExists() {
-        when(invoiceRepository.existsByIdocDocnum("NONE")).thenReturn(false);
-        assertThat(service.existsByIdocDocnum("NONE")).isFalse();
-    }
 }
