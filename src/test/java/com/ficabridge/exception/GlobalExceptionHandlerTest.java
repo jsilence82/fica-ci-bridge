@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(InvoiceController.class)
@@ -93,5 +94,17 @@ class GlobalExceptionHandlerTest {
 
         mockMvc.perform(get("/api/invoices").param("status", "OPEN"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void unsupportedHttpMethod_returns405WithStructuredBody() throws Exception {
+        // /api/invoices is GET-only; POST triggers Spring's HttpRequestMethodNotSupportedException,
+        // which the ResponseEntityExceptionHandler base maps to 405 (previously swallowed into 500).
+        mockMvc.perform(post("/api/invoices"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.status", is(405)))
+                .andExpect(jsonPath("$.error", is("Method Not Allowed")))
+                .andExpect(jsonPath("$.message", notNullValue()))
+                .andExpect(jsonPath("$.timestamp", notNullValue()));
     }
 }
