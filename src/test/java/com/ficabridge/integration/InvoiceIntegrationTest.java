@@ -114,6 +114,18 @@ class InvoiceIntegrationTest {
         assertThat(response.getBody()).containsKey("error");
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    void unmappedPath_returns404NotServerError() {
+        // an unmapped path throws Spring's NoResourceFoundException — it must surface as 404,
+        // not be swallowed into 500 by the generic exception handler
+        ResponseEntity<Map<String, Object>> response = restTemplate.getForEntity(
+                "/api/does-not-exist", (Class<Map<String, Object>>) (Class<?>) Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).containsEntry("status", 404);
+    }
+
     // ── GET /api/payments (paged) ─────────────────────────────────────────────
 
     @Test
