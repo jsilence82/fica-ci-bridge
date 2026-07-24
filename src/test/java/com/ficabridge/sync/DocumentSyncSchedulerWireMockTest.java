@@ -109,9 +109,9 @@ class DocumentSyncSchedulerWireMockTest {
     }
 
     private static InvoiceEntity invoice(
-            String billingDocNumber, String contractAccount, String ficaDocNumber, InvoiceStatus status) {
+            String invoiceNumber, String contractAccount, String ficaDocNumber, InvoiceStatus status) {
         InvoiceEntity entity = new InvoiceEntity();
-        entity.setBillingDocNumber(billingDocNumber);
+        entity.setInvoiceNumber(invoiceNumber);
         entity.setContractAccount(contractAccount);
         entity.setFicaDocNumber(ficaDocNumber);
         entity.setStatus(status);

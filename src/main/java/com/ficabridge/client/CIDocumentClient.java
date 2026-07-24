@@ -2,7 +2,7 @@ package com.ficabridge.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ficabridge.model.odata.ODataBillingDocument;
+import com.ficabridge.model.odata.ODataCIDocument;
 import com.ficabridge.model.odata.ODataWrapper;
 import io.github.resilience4j.ratelimiter.RateLimiter;
 import org.springframework.stereotype.Component;
@@ -15,13 +15,13 @@ import java.util.List;
  * (API_CAINVOICINGDOCUMENT). Entity set: CAInvcgDocument.
  */
 @Component
-public class BillingDocumentClient extends ODataClientBase {
+public class CIDocumentClient extends ODataClientBase {
 
     private static final String BASE_PATH =
             "/sap/opu/odata4/sap/api_cainvoicingdocument/srvd_a2x/sap/cainvoicingdocument/0001/CAInvcgDocument";
     private static final String EXPAND_ITEMS = "_CAInvcgDocItem";
 
-    public BillingDocumentClient(WebClient sapODataWebClient, ObjectMapper objectMapper, RateLimiter sapODataRateLimiter) {
+    public CIDocumentClient(WebClient sapODataWebClient, ObjectMapper objectMapper, RateLimiter sapODataRateLimiter) {
         super(sapODataWebClient, objectMapper, sapODataRateLimiter);
     }
 
@@ -31,10 +31,10 @@ public class BillingDocumentClient extends ODataClientBase {
      * @param contractAccount contract account number (zero-padding optional)
      * @return list of invoicing documents with items expanded
      */
-    public List<ODataBillingDocument> findByContractAccount(String contractAccount) {
+    public List<ODataCIDocument> findByContractAccount(String contractAccount) {
         String filter = "ContractAccount eq '" + contractAccount + "'";
         return fetchList(BASE_PATH, filter, null, EXPAND_ITEMS,
-                new TypeReference<ODataWrapper<ODataBillingDocument>>() {});
+                new TypeReference<ODataWrapper<ODataCIDocument>>() {});
     }
 
     /**
@@ -43,8 +43,8 @@ public class BillingDocumentClient extends ODataClientBase {
      * @param caInvoicingDocument the CAInvoicingDocument key value
      * @return invoicing document, or {@code null} if not found
      */
-    public ODataBillingDocument findById(String caInvoicingDocument) {
+    public ODataCIDocument findById(String caInvoicingDocument) {
         String path = BASE_PATH + "(CAInvoicingDocument='" + caInvoicingDocument + "')";
-        return fetchSingle(path, EXPAND_ITEMS, ODataBillingDocument.class);
+        return fetchSingle(path, EXPAND_ITEMS, ODataCIDocument.class);
     }
 }

@@ -18,9 +18,9 @@ public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final InvoiceMapper invoiceMapper;
 
-    public InvoiceDTO getByBillingDocNumber(String billingDocNumber) {
-        InvoiceEntity entity = invoiceRepository.findByBillingDocNumber(billingDocNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found: " + billingDocNumber));
+    public InvoiceDTO getByInvoiceNumber(String invoiceNumber) {
+        InvoiceEntity entity = invoiceRepository.findByInvoiceNumber(invoiceNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found: " + invoiceNumber));
         return invoiceMapper.toDto(entity);
     }
 

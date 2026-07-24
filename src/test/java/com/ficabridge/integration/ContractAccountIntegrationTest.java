@@ -128,12 +128,12 @@ class ContractAccountIntegrationTest {
         return (Map<String, Object>) body.get("page");
     }
 
-    private InvoiceEntity invoice(String billingDocNumber,
+    private InvoiceEntity invoice(String invoiceNumber,
                                   String contractAccount, String businessPartner,
                                   InvoiceStatus status, String amount, String currency,
                                   LocalDate dueDate) {
         InvoiceEntity e = new InvoiceEntity();
-        e.setBillingDocNumber(billingDocNumber);
+        e.setInvoiceNumber(invoiceNumber);
         e.setContractAccount(contractAccount);
         e.setBusinessPartner(businessPartner);
         e.setStatus(status);

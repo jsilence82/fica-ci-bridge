@@ -12,7 +12,7 @@ import java.util.List;
  * Field names match the SAP OData metadata exactly.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ODataBillingDocument {
+public class ODataCIDocument {
 
     @JsonProperty("CAInvoicingDocument")
     private String caInvoicingDocument;
@@ -75,7 +75,7 @@ public class ODataBillingDocument {
 
     /** Expanded items — populated when {@code $expand=_CAInvcgDocItem} is used. */
     @JsonProperty("_CAInvcgDocItem")
-    private ODataWrapper<ODataBillingLineItem> expandedItems;
+    private ODataWrapper<ODataCILineItem> expandedItems;
 
     // --- getters / setters ---
 
@@ -133,8 +133,8 @@ public class ODataBillingDocument {
     public LocalDate getCaInvcgDocPeriodStartDate() { return caInvcgDocPeriodStartDate; }
     public void setCaInvcgDocPeriodStartDate(LocalDate v) { this.caInvcgDocPeriodStartDate = v; }
 
-    public List<ODataBillingLineItem> getLineItems() {
+    public List<ODataCILineItem> getLineItems() {
         return expandedItems != null ? expandedItems.getResults() : List.of();
     }
-    public void setExpandedItems(ODataWrapper<ODataBillingLineItem> v) { this.expandedItems = v; }
+    public void setExpandedItems(ODataWrapper<ODataCILineItem> v) { this.expandedItems = v; }
 }

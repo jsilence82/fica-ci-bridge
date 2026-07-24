@@ -42,7 +42,7 @@ class PaymentControllerTest {
         mockMvc.perform(get("/api/payments"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
-                .andExpect(jsonPath("$.content[0].billingDocNumber", is("90001234")))
+                .andExpect(jsonPath("$.content[0].invoiceNumber", is("90001234")))
                 .andExpect(jsonPath("$.content[0].status", is("OPEN")))
                 .andExpect(jsonPath("$.content[1].status", is("OVERDUE")))
                 .andExpect(jsonPath("$.page.totalElements", is(2)));
@@ -102,10 +102,10 @@ class PaymentControllerTest {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private InvoiceDTO openItem(String billingDocNumber, String contractAccount,
+    private InvoiceDTO openItem(String invoiceNumber, String contractAccount,
                                 InvoiceStatus status, String amount) {
         InvoiceDTO dto = new InvoiceDTO();
-        dto.setBillingDocNumber(billingDocNumber);
+        dto.setInvoiceNumber(invoiceNumber);
         dto.setContractAccount(contractAccount);
         dto.setStatus(status);
         dto.setAmount(new BigDecimal(amount));

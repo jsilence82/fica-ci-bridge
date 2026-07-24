@@ -9,7 +9,7 @@ import java.util.List;
 @Data
 public class InvoiceDTO {
 
-    private String billingDocNumber;
+    private String invoiceNumber;
     private String officialDocumentNumber;
     private String businessPartner;
     private String contractAccount;

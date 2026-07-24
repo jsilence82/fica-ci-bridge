@@ -30,30 +30,30 @@ class InvoiceServiceTest {
     @Mock private InvoiceMapper invoiceMapper;
     @InjectMocks private InvoiceService service;
 
-    // ── getByBillingDocNumber ────────────────────────────────────────────────
+    // ── getByInvoiceNumber ────────────────────────────────────────────────
 
     @Test
-    void getByBillingDocNumber_found_returnsMappedDto() {
+    void getByInvoiceNumber_found_returnsMappedDto() {
         InvoiceEntity entity = new InvoiceEntity();
-        entity.setBillingDocNumber("90001234");
+        entity.setInvoiceNumber("90001234");
         InvoiceDTO dto = new InvoiceDTO();
-        dto.setBillingDocNumber("90001234");
+        dto.setInvoiceNumber("90001234");
 
-        when(invoiceRepository.findByBillingDocNumber("90001234")).thenReturn(Optional.of(entity));
+        when(invoiceRepository.findByInvoiceNumber("90001234")).thenReturn(Optional.of(entity));
         when(invoiceMapper.toDto(entity)).thenReturn(dto);
 
-        InvoiceDTO result = service.getByBillingDocNumber("90001234");
+        InvoiceDTO result = service.getByInvoiceNumber("90001234");
 
-        assertThat(result.getBillingDocNumber()).isEqualTo("90001234");
-        verify(invoiceRepository).findByBillingDocNumber("90001234");
+        assertThat(result.getInvoiceNumber()).isEqualTo("90001234");
+        verify(invoiceRepository).findByInvoiceNumber("90001234");
         verify(invoiceMapper).toDto(entity);
     }
 
     @Test
-    void getByBillingDocNumber_notFound_throwsResourceNotFoundException() {
-        when(invoiceRepository.findByBillingDocNumber("UNKNOWN")).thenReturn(Optional.empty());
+    void getByInvoiceNumber_notFound_throwsResourceNotFoundException() {
+        when(invoiceRepository.findByInvoiceNumber("UNKNOWN")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.getByBillingDocNumber("UNKNOWN"))
+        assertThatThrownBy(() -> service.getByInvoiceNumber("UNKNOWN"))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("UNKNOWN");
     }

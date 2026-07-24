@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.ficabridge.exception.ODataClientException;
-import com.ficabridge.model.odata.ODataBillingDocument;
+import com.ficabridge.model.odata.ODataCIDocument;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.github.resilience4j.ratelimiter.RateLimiter;
@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @WireMockTest
-class BillingDocumentClientTest {
+class CIDocumentClientTest {
 
     private static final String BASE_PATH =
             "/sap/opu/odata4/sap/api_cainvoicingdocument/srvd_a2x/sap/cainvoicingdocument/0001/CAInvcgDocument";
@@ -30,7 +30,7 @@ class BillingDocumentClientTest {
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-    private BillingDocumentClient client;
+    private CIDocumentClient client;
 
     @BeforeEach
     void setUp(WireMockRuntimeInfo wmRuntimeInfo) {
@@ -38,7 +38,7 @@ class BillingDocumentClientTest {
                 .baseUrl(wmRuntimeInfo.getHttpBaseUrl())
                 .build();
         // Effectively unlimited — rate-limiter engagement is covered separately in ODataClientRateLimiterTest.
-        client = new BillingDocumentClient(webClient, OBJECT_MAPPER, RateLimiter.ofDefaults("test"));
+        client = new CIDocumentClient(webClient, OBJECT_MAPPER, RateLimiter.ofDefaults("test"));
     }
 
     // ── findByContractAccount ────────────────────────────────────────────────
@@ -80,10 +80,10 @@ class BillingDocumentClientTest {
                 .withQueryParam("$expand", equalTo("_CAInvcgDocItem"))
                 .willReturn(okJson(json)));
 
-        List<ODataBillingDocument> result = client.findByContractAccount("100200");
+        List<ODataCIDocument> result = client.findByContractAccount("100200");
 
         assertThat(result).hasSize(1);
-        ODataBillingDocument doc = result.get(0);
+        ODataCIDocument doc = result.get(0);
         assertThat(doc.getCaInvoicingDocument()).isEqualTo("000090001234");
         assertThat(doc.getContractAccount()).isEqualTo("0000100200");
         assertThat(doc.getBusinessPartner()).isEqualTo("0000005678");
@@ -115,7 +115,7 @@ class BillingDocumentClientTest {
         stubFor(get(urlPathEqualTo(BASE_PATH))
                 .willReturn(okJson(json)));
 
-        List<ODataBillingDocument> result = client.findByContractAccount("200300");
+        List<ODataCIDocument> result = client.findByContractAccount("200300");
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getCaInvoicingDocument()).isEqualTo("000090009999");
@@ -127,7 +127,7 @@ class BillingDocumentClientTest {
         stubFor(get(urlPathEqualTo(BASE_PATH))
                 .willReturn(okJson("{\"value\":[]}")));
 
-        List<ODataBillingDocument> result = client.findByContractAccount("100200");
+        List<ODataCIDocument> result = client.findByContractAccount("100200");
 
         assertThat(result).isEmpty();
     }
@@ -191,7 +191,7 @@ class BillingDocumentClientTest {
                 .withQueryParam("$expand", equalTo("_CAInvcgDocItem"))
                 .willReturn(okJson(json)));
 
-        ODataBillingDocument result = client.findById("000090001234");
+        ODataCIDocument result = client.findById("000090001234");
 
         assertThat(result).isNotNull();
         assertThat(result.getCaInvoicingDocument()).isEqualTo("000090001234");
@@ -216,7 +216,7 @@ class BillingDocumentClientTest {
         stubFor(get(urlPathEqualTo(BASE_PATH + "(CAInvoicingDocument='EMPTY')"))
                 .willReturn(ok().withBody("")));
 
-        ODataBillingDocument result = client.findById("EMPTY");
+        ODataCIDocument result = client.findById("EMPTY");
 
         assertThat(result).isNull();
     }
@@ -234,7 +234,7 @@ class BillingDocumentClientTest {
         stubFor(get(urlPathEqualTo(BASE_PATH + "(CAInvoicingDocument='000090005555')"))
                 .willReturn(okJson(json)));
 
-        ODataBillingDocument result = client.findById("000090005555");
+        ODataCIDocument result = client.findById("000090005555");
 
         assertThat(result).isNotNull();
         assertThat(result.getCaInvcgReversalDocument()).isEqualTo("000090006666");

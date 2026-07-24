@@ -28,7 +28,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void resourceNotFound_returns404WithStructuredBody() throws Exception {
-        when(invoiceService.getByBillingDocNumber("MISSING"))
+        when(invoiceService.getByInvoiceNumber("MISSING"))
                 .thenThrow(new ResourceNotFoundException("Invoice not found: MISSING"));
 
         mockMvc.perform(get("/api/invoices/MISSING"))
@@ -41,7 +41,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void oDataClientError_returns502WithStructuredBody() throws Exception {
-        when(invoiceService.getByBillingDocNumber("DOC001"))
+        when(invoiceService.getByInvoiceNumber("DOC001"))
                 .thenThrow(new ODataClientException("HTTP 503 from SAP", 503));
 
         mockMvc.perform(get("/api/invoices/DOC001"))

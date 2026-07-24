@@ -20,7 +20,7 @@ public class InvoiceEntity {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String billingDocNumber;     // CAInvoicingDocument, leading zeros stripped — natural key
+    private String invoiceNumber;     // CAInvoicingDocument, leading zeros stripped — natural key
 
     @Column(nullable = false)
     private String businessPartner;      // BusinessPartner, leading zeros stripped

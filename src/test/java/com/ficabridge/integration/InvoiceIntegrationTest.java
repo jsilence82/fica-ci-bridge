@@ -88,7 +88,7 @@ class InvoiceIntegrationTest {
         assertThat(pageMeta(getPaged("/api/invoices?size=9999")).get("size")).isEqualTo(200);
     }
 
-    // ── GET /api/invoices/{billingDocNumber} ──────────────────────────────────
+    // ── GET /api/invoices/{invoiceNumber} ──────────────────────────────────
 
     @SuppressWarnings("unchecked")
     @Test
@@ -98,7 +98,7 @@ class InvoiceIntegrationTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody())
-                .containsEntry("billingDocNumber", "90001001")
+                .containsEntry("invoiceNumber", "90001001")
                 .containsEntry("contractAccount", "200001")
                 .containsEntry("status", "OPEN")
                 .containsEntry("currency", "EUR");
@@ -167,12 +167,12 @@ class InvoiceIntegrationTest {
         return (Map<String, Object>) body.get("page");
     }
 
-    private InvoiceEntity invoice(String billingDocNumber,
+    private InvoiceEntity invoice(String invoiceNumber,
                                   String contractAccount, String businessPartner,
                                   InvoiceStatus status, String amount, String currency,
                                   LocalDate dueDate) {
         InvoiceEntity e = new InvoiceEntity();
-        e.setBillingDocNumber(billingDocNumber);
+        e.setInvoiceNumber(invoiceNumber);
         e.setContractAccount(contractAccount);
         e.setBusinessPartner(businessPartner);
         e.setStatus(status);

@@ -164,7 +164,7 @@ arrive at runtime through the service bindings.
 
 ## 7. Connecting to On-Premise SAP
 
-This bridge only makes **outbound** calls to SAP (OData `GET` requests via `BillingDocumentClient`,
+This bridge only makes **outbound** calls to SAP (OData `GET` requests via `CIDocumentClient`,
 `ContractAccountClient`, `FicaDocumentClient`) — it never receives inbound calls from SAP. If the
 target S/4HANA system is on-premise rather than a BTP-hosted SaaS tenant, the BTP Destination
 Service + Connectivity Service + Cloud Connector let the bridge reach it without exposing the
