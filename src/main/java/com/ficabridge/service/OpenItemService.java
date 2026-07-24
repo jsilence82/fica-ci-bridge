@@ -8,10 +8,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+// Reads are @Transactional(readOnly = true) so the mapper can walk each invoice's lazy line items
+// with Open-Session-In-View off (see spring.jpa.open-in-view in application.yml).
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class OpenItemService {
 

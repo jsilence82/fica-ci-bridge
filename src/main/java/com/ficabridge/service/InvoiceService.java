@@ -10,8 +10,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+// Reads are @Transactional(readOnly = true) so the persistence context stays open while the mapper
+// walks the lazy InvoiceEntity.lineItems association — Open-Session-In-View is deliberately off
+// (see spring.jpa.open-in-view in application.yml), so without this the mapping would throw
+// LazyInitializationException.
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class InvoiceService {
 
@@ -40,6 +46,7 @@ public class InvoiceService {
         return invoiceRepository.findByContractAccountAndStatus(contractAccount, status, pageable).map(invoiceMapper::toDto);
     }
 
+    @Transactional
     public InvoiceEntity save(InvoiceEntity entity) {
         return invoiceRepository.save(entity);
     }

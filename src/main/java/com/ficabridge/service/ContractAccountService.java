@@ -12,8 +12,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+// Reads are @Transactional(readOnly = true) so the mapper can walk lazy associations (each
+// ContractAccountDTO's invoices, and their line items) with Open-Session-In-View off.
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ContractAccountService {
 
@@ -42,6 +46,7 @@ public class ContractAccountService {
                 });
     }
 
+    @Transactional
     public ContractAccountEntity save(ContractAccountEntity entity) {
         return contractAccountRepository.save(entity);
     }
