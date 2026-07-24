@@ -48,9 +48,9 @@ public class InvoiceController {
         return ResponseEntity.ok(new PagedModel<>(result));
     }
 
-    /** GET /api/invoices/{billingDocNumber} */
-    @GetMapping("/{billingDocNumber}")
-    public ResponseEntity<InvoiceDTO> getInvoice(@PathVariable String billingDocNumber) {
-        return ResponseEntity.ok(invoiceService.getByBillingDocNumber(billingDocNumber));
+    /** GET /api/invoices/{invoiceNumber} */
+    @GetMapping("/{invoiceNumber}")
+    public ResponseEntity<InvoiceDTO> getInvoice(@PathVariable String invoiceNumber) {
+        return ResponseEntity.ok(invoiceService.getByInvoiceNumber(invoiceNumber));
     }
 }

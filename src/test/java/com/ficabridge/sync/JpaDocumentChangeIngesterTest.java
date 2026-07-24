@@ -27,7 +27,7 @@ class JpaDocumentChangeIngesterTest {
         ingester = new JpaDocumentChangeIngester(invoiceRepository);
 
         InvoiceEntity entity = new InvoiceEntity();
-        entity.setBillingDocNumber("90001001");
+        entity.setInvoiceNumber("90001001");
         entity.setBusinessPartner("5678");
         entity.setContractAccount("100200");
         entity.setFicaDocNumber("1234");
@@ -42,7 +42,7 @@ class JpaDocumentChangeIngesterTest {
         ingester.ingest(List.of(
                 new DocumentChange("90001001", "100200", InvoiceStatus.CLEARED, LocalDate.of(2024, 6, 15))));
 
-        InvoiceEntity updated = invoiceRepository.findByBillingDocNumber("90001001").orElseThrow();
+        InvoiceEntity updated = invoiceRepository.findByInvoiceNumber("90001001").orElseThrow();
         assertThat(updated.getStatus()).isEqualTo(InvoiceStatus.CLEARED);
         assertThat(updated.getClearingDate()).isEqualTo(LocalDate.of(2024, 6, 15));
         assertThat(updated.getLastSyncedAt()).isNotNull();
@@ -57,19 +57,19 @@ class JpaDocumentChangeIngesterTest {
         ingester.ingest(List.of(change));
 
         assertThat(invoiceRepository.findAll()).hasSize(1);
-        assertThat(invoiceRepository.findByBillingDocNumber("90001001").orElseThrow().getStatus())
+        assertThat(invoiceRepository.findByInvoiceNumber("90001001").orElseThrow().getStatus())
                 .isEqualTo(InvoiceStatus.CLEARED);
     }
 
     @Test
-    void ingest_unknownBillingDocNumber_isSkippedWithoutInserting() {
+    void ingest_unknownInvoiceNumber_isSkippedWithoutInserting() {
         DocumentChange change = new DocumentChange("UNKNOWN", "100200", InvoiceStatus.CLEARED, LocalDate.now());
 
         ingester.ingest(List.of(change));
 
         // skipped, not inserted — the cache still holds only the seeded invoice
         assertThat(invoiceRepository.findAll()).hasSize(1);
-        assertThat(invoiceRepository.findByBillingDocNumber("UNKNOWN")).isEmpty();
+        assertThat(invoiceRepository.findByInvoiceNumber("UNKNOWN")).isEmpty();
     }
 
     @Test
@@ -80,9 +80,9 @@ class JpaDocumentChangeIngesterTest {
         // unknown is listed first, so a throw-on-miss would roll back the known transition too
         ingester.ingest(List.of(unknown, known));
 
-        InvoiceEntity updated = invoiceRepository.findByBillingDocNumber("90001001").orElseThrow();
+        InvoiceEntity updated = invoiceRepository.findByInvoiceNumber("90001001").orElseThrow();
         assertThat(updated.getStatus()).isEqualTo(InvoiceStatus.CLEARED);
         assertThat(updated.getClearingDate()).isEqualTo(LocalDate.of(2024, 6, 15));
-        assertThat(invoiceRepository.findByBillingDocNumber("UNKNOWN")).isEmpty();
+        assertThat(invoiceRepository.findByInvoiceNumber("UNKNOWN")).isEmpty();
     }
 }

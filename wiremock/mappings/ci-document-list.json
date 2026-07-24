@@ -16,7 +16,7 @@
         "headers": {
           "Content-Type": "application/json"
         },
-        "bodyFileName": "billing-document-response.json"
+        "bodyFileName": "ci-document-response.json"
       }
     }
   ]

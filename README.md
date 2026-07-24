@@ -26,7 +26,7 @@ S/4HANA OData APIs
   ┌──────────────────────────┐
   │   OData Client Layer     │  ContractAccountClient
   │   (client/)              │  FicaDocumentClient
-  │                          │  BillingDocumentClient
+  │                          │  CIDocumentClient
   │   Base: ODataClientBase  │  (shared $filter/$expand logic)
   └──────────┬───────────────┘
              │  Raw ODataXxx objects (SAP-shaped)
@@ -81,8 +81,8 @@ Full field-level detail for each API is in
 
 | Method | Path                                  | Description                                       | Paged |
 |--------|---------------------------------------|----------------------------------------------------|-------|
-| GET    | `/api/invoices`                       | List billing documents                             | ✅    |
-| GET    | `/api/invoices/{billingDocument}`     | Single billing document with items                 | —     |
+| GET    | `/api/invoices`                       | List invoices                                      | ✅    |
+| GET    | `/api/invoices/{invoiceNumber}`       | Single invoice with items                          | —     |
 | GET    | `/api/contract-accounts/{vkont}`      | Contract account master data                       | —     |
 | GET    | `/api/contract-accounts/overdue`      | Contract accounts with at least one OVERDUE invoice | ✅    |
 | GET    | `/api/payments`                       | Open FI-CA items (receivables)                     | ✅    |
@@ -100,7 +100,7 @@ shape:
 
 ```json
 {
-  "content": [ { "billingDocNumber": "...", "status": "OPEN", ... } ],
+  "content": [ { "invoiceNumber": "...", "status": "OPEN", ... } ],
   "page": { "size": 50, "number": 0, "totalElements": 3, "totalPages": 1 }
 }
 ```

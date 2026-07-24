@@ -42,7 +42,7 @@ class InvoiceControllerTest {
         mockMvc.perform(get("/api/invoices"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(1)))
-                .andExpect(jsonPath("$.content[0].billingDocNumber", is("90001234")))
+                .andExpect(jsonPath("$.content[0].invoiceNumber", is("90001234")))
                 .andExpect(jsonPath("$.content[0].status", is("OPEN")))
                 .andExpect(jsonPath("$.page.totalElements", is(1)));
 
@@ -120,7 +120,7 @@ class InvoiceControllerTest {
                 .andExpect(jsonPath("$.page.totalElements", is(3)));
     }
 
-    // ── GET /api/invoices/{billingDocNumber} ─────────────────────────────────
+    // ── GET /api/invoices/{invoiceNumber} ─────────────────────────────────
 
     @Test
     void getInvoice_found_returns200WithDto() throws Exception {
@@ -128,11 +128,11 @@ class InvoiceControllerTest {
         dto.setAmount(new BigDecimal("1250.00"));
         dto.setCurrency("EUR");
         dto.setDueDate(LocalDate.of(2024, 4, 15));
-        when(invoiceService.getByBillingDocNumber("90001234")).thenReturn(dto);
+        when(invoiceService.getByInvoiceNumber("90001234")).thenReturn(dto);
 
         mockMvc.perform(get("/api/invoices/90001234"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.billingDocNumber", is("90001234")))
+                .andExpect(jsonPath("$.invoiceNumber", is("90001234")))
                 .andExpect(jsonPath("$.contractAccount", is("100200")))
                 .andExpect(jsonPath("$.status", is("CLEARED")))
                 .andExpect(jsonPath("$.amount", is(1250.00)))
@@ -141,7 +141,7 @@ class InvoiceControllerTest {
 
     @Test
     void getInvoice_notFound_returns404WithErrorBody() throws Exception {
-        when(invoiceService.getByBillingDocNumber("UNKNOWN"))
+        when(invoiceService.getByInvoiceNumber("UNKNOWN"))
                 .thenThrow(new ResourceNotFoundException("Invoice not found: UNKNOWN"));
 
         mockMvc.perform(get("/api/invoices/UNKNOWN"))
@@ -151,9 +151,9 @@ class InvoiceControllerTest {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private InvoiceDTO invoiceDto(String billingDocNumber, String contractAccount, InvoiceStatus status) {
+    private InvoiceDTO invoiceDto(String invoiceNumber, String contractAccount, InvoiceStatus status) {
         InvoiceDTO dto = new InvoiceDTO();
-        dto.setBillingDocNumber(billingDocNumber);
+        dto.setInvoiceNumber(invoiceNumber);
         dto.setContractAccount(contractAccount);
         dto.setStatus(status);
         return dto;

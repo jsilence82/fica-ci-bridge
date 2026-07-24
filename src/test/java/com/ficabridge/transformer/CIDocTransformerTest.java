@@ -2,8 +2,8 @@ package com.ficabridge.transformer;
 
 import com.ficabridge.model.dto.InvoiceDTO;
 import com.ficabridge.model.dto.InvoiceStatus;
-import com.ficabridge.model.odata.ODataBillingDocument;
-import com.ficabridge.model.odata.ODataBillingLineItem;
+import com.ficabridge.model.odata.ODataCIDocument;
+import com.ficabridge.model.odata.ODataCILineItem;
 import com.ficabridge.model.odata.ODataWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,26 +14,26 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class BillingDocTransformerTest {
+class CIDocTransformerTest {
 
-    private BillingDocTransformer transformer;
+    private CIDocTransformer transformer;
 
     @BeforeEach
     void setUp() {
-        transformer = new BillingDocTransformer();
+        transformer = new CIDocTransformer();
     }
 
     // ── field mapping ────────────────────────────────────────────────────────
 
     @Test
     void transform_mapsAllScalarFields() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "000090001234", "0000100200", "0000005678",
                 "1250.00", "EUR", LocalDate.of(2024, 4, 15), null);
 
         InvoiceDTO dto = transformer.transform(source);
 
-        assertThat(dto.getBillingDocNumber()).isEqualTo("90001234");
+        assertThat(dto.getInvoiceNumber()).isEqualTo("90001234");
         assertThat(dto.getContractAccount()).isEqualTo("100200");
         assertThat(dto.getBusinessPartner()).isEqualTo("5678");
         assertThat(dto.getAmount()).isEqualByComparingTo(new BigDecimal("1250.00"));
@@ -43,7 +43,7 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_officialDocumentNumber_isMapped() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "000090001234", null, null, null, null, null, null);
         source.setCaOfficialDocumentNumber("ODN2024001001");
 
@@ -54,7 +54,7 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_nullOptionalFields_areNull() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "0000000001", null, null, null, null, null, null);
 
         InvoiceDTO dto = transformer.transform(source);
@@ -72,7 +72,7 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_reversalDocumentPresent_isReversed() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "0000000001", null, null, null, null, LocalDate.now().plusDays(30), null);
         source.setCaInvcgReversalDocument("000090009999");
 
@@ -81,7 +81,7 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_allItemsCleared_isCleared() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "0000000001", null, null, null, null, LocalDate.now().plusDays(10), null);
         source.setExpandedItems(wrapItems(
                 lineItem("00000001", "980.00", "EUR", "USAG", "CLEAR001"),
@@ -92,7 +92,7 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_someItemsCleared_isPartiallyPaid() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "0000000001", null, null, null, null, LocalDate.now().plusDays(10), null);
         source.setExpandedItems(wrapItems(
                 lineItem("00000001", "980.00", "EUR", "USAG", "CLEAR001"),
@@ -103,7 +103,7 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_notClearedFutureDueDate_isOpen() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "0000000001", null, null, null, null, LocalDate.now().plusDays(30), null);
 
         assertThat(transformer.transform(source).getStatus()).isEqualTo(InvoiceStatus.OPEN);
@@ -111,7 +111,7 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_notClearedPastDueDate_isOverdue() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "0000000001", null, null, null, null, LocalDate.now().minusDays(1), null);
 
         assertThat(transformer.transform(source).getStatus()).isEqualTo(InvoiceStatus.OVERDUE);
@@ -119,7 +119,7 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_notClearedNullDueDate_isOpen() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "0000000001", null, null, null, null, null, null);
 
         assertThat(transformer.transform(source).getStatus()).isEqualTo(InvoiceStatus.OPEN);
@@ -127,7 +127,7 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_reversalTakesPrecedenceOverClearing() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "0000000001", null, null, null, null, null, null);
         source.setCaInvcgReversalDocument("000090009999");
         source.setExpandedItems(wrapItems(
@@ -141,10 +141,10 @@ class BillingDocTransformerTest {
 
     @Test
     void transform_withLineItems_mapsItems() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "000090001234", null, null, null, "EUR", null, null);
 
-        ODataBillingLineItem item = new ODataBillingLineItem();
+        ODataCILineItem item = new ODataCILineItem();
         item.setCaInvoicingDocument("000090001234");
         item.setCaInvcgDocItem("00000010");
         item.setCaMainTransaction("0100");
@@ -173,8 +173,37 @@ class BillingDocTransformerTest {
     }
 
     @Test
+    void transform_ficaDocNumber_linkedFromLineItemCADocumentNumber() {
+        // The invoicing document (API_CAINVOICINGDOCUMENT) carries the linked FI-CA accounting
+        // document number (OPBEL) on its items as CADocumentNumber; the transformer lifts it onto
+        // the invoice so document-sync can match FI-CA clearing updates back to this invoice.
+        ODataCIDocument source = invoicingDoc(
+                "000090001234", null, null, null, "EUR", null, null);
+
+        ODataCILineItem item1 = lineItem("00000001", "980.00", "EUR", "USAG", "");
+        item1.setCaDocumentNumber("0000004711");
+        ODataCILineItem item2 = lineItem("00000002", "270.00", "EUR", "FIXD", "");
+        item2.setCaDocumentNumber("0000004711");
+        source.setExpandedItems(wrapItems(item1, item2));
+
+        InvoiceDTO dto = transformer.transform(source);
+
+        assertThat(dto.getFicaDocNumber()).isEqualTo("4711");
+    }
+
+    @Test
+    void transform_noLineItemCADocumentNumber_ficaDocNumberIsNull() {
+        ODataCIDocument source = invoicingDoc(
+                "000090001234", null, null, null, "EUR", null, null);
+        // line item present but with no linked FI-CA document number
+        source.setExpandedItems(wrapItems(lineItem("00000001", "980.00", "EUR", "USAG", "")));
+
+        assertThat(transformer.transform(source).getFicaDocNumber()).isNull();
+    }
+
+    @Test
     void transform_emptyLineItems_lineItemsIsNull() {
-        ODataBillingDocument source = invoicingDoc(
+        ODataCIDocument source = invoicingDoc(
                 "0000000001", null, null, null, null, null, null);
         // no wrapper set — getLineItems() returns List.of()
 
@@ -184,10 +213,10 @@ class BillingDocTransformerTest {
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
-    private ODataBillingDocument invoicingDoc(String docNum, String contractAccount,
+    private ODataCIDocument invoicingDoc(String docNum, String contractAccount,
             String businessPartner, String amount, String currency,
             LocalDate dueDate, String officialDocNum) {
-        ODataBillingDocument doc = new ODataBillingDocument();
+        ODataCIDocument doc = new ODataCIDocument();
         doc.setCaInvoicingDocument(docNum);
         doc.setContractAccount(contractAccount);
         doc.setBusinessPartner(businessPartner);
@@ -198,9 +227,9 @@ class BillingDocTransformerTest {
         return doc;
     }
 
-    private ODataBillingLineItem lineItem(String itemNum, String amount, String currency,
+    private ODataCILineItem lineItem(String itemNum, String amount, String currency,
             String conditionType, String clearingDocNum) {
-        ODataBillingLineItem item = new ODataBillingLineItem();
+        ODataCILineItem item = new ODataCILineItem();
         item.setCaInvcgDocItem(itemNum);
         item.setCaAmountInTransactionCurrency(amount);
         item.setTransactionCurrency(currency);

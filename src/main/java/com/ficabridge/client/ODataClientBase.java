@@ -47,7 +47,7 @@ public abstract class ODataClientBase {
      * Fetch a list of entities from the given OData entity-set path,
      * applying optional $filter, $select, and $expand parameters.
      *
-     * @param entitySetPath path relative to the base URL, e.g. {@code /API_BILLING_DOCUMENT_SRV/BillingDocument}
+     * @param entitySetPath path relative to the base URL, e.g. {@code /API_FICADOCUMENT/FiCADocument}
      *                      (the URL path prefix is the SAP service root, not a searchable Hub identifier)
      * @param filter        OData $filter expression, or {@code null}
      * @param select        comma-separated $select fields, or {@code null}
@@ -98,7 +98,7 @@ public abstract class ODataClientBase {
     /**
      * Fetch a single entity by key.
      *
-     * @param entityPath path including the key predicate, e.g. {@code /API_BILLING_DOCUMENT_SRV/BillingDocument('0090001234')}
+     * @param entityPath path including the key predicate, e.g. {@code /API_FICADOCUMENT/FiCADocument('0000001234')}
      *                   (the URL path prefix is the SAP service root, not a searchable Hub identifier)
      * @param expand     comma-separated $expand navigation properties, or {@code null}
      * @param type       target type class

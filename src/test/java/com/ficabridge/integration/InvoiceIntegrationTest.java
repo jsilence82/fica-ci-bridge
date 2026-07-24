@@ -88,7 +88,7 @@ class InvoiceIntegrationTest {
         assertThat(pageMeta(getPaged("/api/invoices?size=9999")).get("size")).isEqualTo(200);
     }
 
-    // ── GET /api/invoices/{billingDocNumber} ──────────────────────────────────
+    // ── GET /api/invoices/{invoiceNumber} ──────────────────────────────────
 
     @SuppressWarnings("unchecked")
     @Test
@@ -98,7 +98,7 @@ class InvoiceIntegrationTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody())
-                .containsEntry("billingDocNumber", "90001001")
+                .containsEntry("invoiceNumber", "90001001")
                 .containsEntry("contractAccount", "200001")
                 .containsEntry("status", "OPEN")
                 .containsEntry("currency", "EUR");
@@ -112,6 +112,18 @@ class InvoiceIntegrationTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody()).containsKey("error");
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void unmappedPath_returns404NotServerError() {
+        // an unmapped path throws Spring's NoResourceFoundException — it must surface as 404,
+        // not be swallowed into 500 by the generic exception handler
+        ResponseEntity<Map<String, Object>> response = restTemplate.getForEntity(
+                "/api/does-not-exist", (Class<Map<String, Object>>) (Class<?>) Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).containsEntry("status", 404);
     }
 
     // ── GET /api/payments (paged) ─────────────────────────────────────────────
@@ -167,12 +179,12 @@ class InvoiceIntegrationTest {
         return (Map<String, Object>) body.get("page");
     }
 
-    private InvoiceEntity invoice(String billingDocNumber,
+    private InvoiceEntity invoice(String invoiceNumber,
                                   String contractAccount, String businessPartner,
                                   InvoiceStatus status, String amount, String currency,
                                   LocalDate dueDate) {
         InvoiceEntity e = new InvoiceEntity();
-        e.setBillingDocNumber(billingDocNumber);
+        e.setInvoiceNumber(invoiceNumber);
         e.setContractAccount(contractAccount);
         e.setBusinessPartner(businessPartner);
         e.setStatus(status);

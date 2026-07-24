@@ -38,7 +38,7 @@ An optional PostgreSQL cache can be added to serve last-known data during SAP do
   │                                                           │
   │  ┌─────────────────────────────────────────────────────┐  │
   │  │  OData Client Layer  (client/)                      │  │
-  │  │  BillingDocumentClient                              │  │
+  │  │  CIDocumentClient                                   │  │
   │  │  ContractAccountClient                              │  │
   │  │  FicaDocumentClient                                 │  │
   │  │  • Shared $filter/$expand logic in ODataClientBase  │  │
@@ -107,8 +107,8 @@ replaced by an event-driven consumer without `service/` or `controller/` changin
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/invoices` | List billing documents; filterable by contract account; **paged** (`page`/`size`/`sort`) |
-| GET | `/api/invoices/{billingDocument}` | Single billing document with line items |
+| GET | `/api/invoices` | List invoices; filterable by contract account; **paged** (`page`/`size`/`sort`) |
+| GET | `/api/invoices/{invoiceNumber}` | Single invoice with line items |
 | GET | `/api/contract-accounts/{vkont}` | Contract account master data |
 | GET | `/api/contract-accounts/overdue` | Contract accounts with at least one OVERDUE invoice; **paged** (`page`/`size`/`sort`) |
 | GET | `/api/payments` | Open FI-CA items (receivables); **paged** (`page`/`size`/`sort`) |
@@ -167,12 +167,15 @@ Two design points that aren't obvious from the code alone:
   'OPEN'` filter would hide the very documents that transitioned *out* of OPEN — the scheduler
   needs the current state of every document it's tracking, not just the ones still open, to
   detect the transition at all.
-- **Why the match key is `ficaDocNumber`, not `billingDocNumber`.** `API_FICADOCUMENT` (what
-  this scheduler polls) and `API_CAINVOICINGDOCUMENT` (what invoices are keyed by in the cache)
-  are different SAP objects with different key spaces. `DocumentSyncScheduler.diff()` resolves
-  the FI-CA document number back to the cached invoice via `InvoiceEntity.ficaDocNumber` before
-  emitting a `DocumentChange` keyed by `billingDocNumber` — the natural key the rest of the
-  system, including `DocumentChangeIngester`, actually uses.
+- **Why the match key is `ficaDocNumber`, not `invoiceNumber`.** `API_FICADOCUMENT` (what
+  this scheduler polls) exposes FI-CA accounting documents (OPBEL — the ledger postings where
+  clearing status lives), while `API_CAINVOICINGDOCUMENT` (what invoices are keyed by in the
+  cache) exposes CI invoicing documents — a different SAP object with its own number. They are
+  linked by the item-level `CADocumentNumber`, which `CIDocTransformer` lifts onto
+  `InvoiceEntity.ficaDocNumber`. `DocumentSyncScheduler.diff()` resolves the FI-CA document number
+  back to the cached invoice via that field before emitting a `DocumentChange` keyed by
+  `invoiceNumber` — the natural key the rest of the system, including `DocumentChangeIngester`,
+  actually uses.
 
 **Explicitly out of scope for this job:** discovering invoices SAP has posted that the cache
 has never seen (a cache miss is skipped and logged, not inserted and not thrown — see

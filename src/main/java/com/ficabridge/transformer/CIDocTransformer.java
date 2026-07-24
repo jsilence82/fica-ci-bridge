@@ -3,8 +3,8 @@ package com.ficabridge.transformer;
 import com.ficabridge.model.dto.InvoiceDTO;
 import com.ficabridge.model.dto.InvoiceLineItemDTO;
 import com.ficabridge.model.dto.InvoiceStatus;
-import com.ficabridge.model.odata.ODataBillingDocument;
-import com.ficabridge.model.odata.ODataBillingLineItem;
+import com.ficabridge.model.odata.ODataCIDocument;
+import com.ficabridge.model.odata.ODataCILineItem;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -24,17 +24,17 @@ import java.util.List;
  * </ul>
  */
 @Component
-public class BillingDocTransformer {
+public class CIDocTransformer {
 
     /**
      * Map a single OData invoicing document to an {@link InvoiceDTO}.
      * Line items are included when the OData response was fetched with
      * {@code $expand=_CAInvcgDocItem}.
      */
-    public InvoiceDTO transform(ODataBillingDocument source) {
+    public InvoiceDTO transform(ODataCIDocument source) {
         InvoiceDTO dto = new InvoiceDTO();
 
-        dto.setBillingDocNumber(TransformerUtils.stripLeadingZeros(source.getCaInvoicingDocument()));
+        dto.setInvoiceNumber(TransformerUtils.stripLeadingZeros(source.getCaInvoicingDocument()));
         dto.setContractAccount(TransformerUtils.stripLeadingZeros(source.getContractAccount()));
         dto.setBusinessPartner(TransformerUtils.stripLeadingZeros(source.getBusinessPartner()));
         dto.setDueDate(source.getCaNetDueDate());
@@ -43,15 +43,26 @@ public class BillingDocTransformer {
         dto.setOfficialDocumentNumber(TransformerUtils.trimSapString(source.getCaOfficialDocumentNumber()));
         dto.setStatus(deriveStatus(source));
 
-        List<ODataBillingLineItem> rawItems = source.getLineItems();
+        List<ODataCILineItem> rawItems = source.getLineItems();
         if (rawItems != null && !rawItems.isEmpty()) {
             dto.setLineItems(rawItems.stream().map(this::transformLineItem).toList());
+
+            // Link to the FI-CA accounting document (OPBEL) the invoicing items posted to, carried on
+            // the item as CADocumentNumber. All items of an invoicing document normally post to the
+            // same FI-CA document, so the first non-blank value is representative. This is the key
+            // DocumentSyncScheduler.diff() uses to match FI-CA clearing updates (API_FICADOCUMENT)
+            // back to the cached invoice (API_CAINVOICINGDOCUMENT) — see the two APIs' distinct keys.
+            rawItems.stream()
+                    .map(ODataCILineItem::getCaDocumentNumber)
+                    .filter(n -> n != null && !n.isBlank())
+                    .findFirst()
+                    .ifPresent(n -> dto.setFicaDocNumber(TransformerUtils.stripLeadingZeros(n)));
         }
 
         return dto;
     }
 
-    private InvoiceLineItemDTO transformLineItem(ODataBillingLineItem source) {
+    private InvoiceLineItemDTO transformLineItem(ODataCILineItem source) {
         InvoiceLineItemDTO dto = new InvoiceLineItemDTO();
         dto.setItemNumber(TransformerUtils.stripLeadingZeros(source.getCaInvcgDocItem()));
         dto.setQuantity(TransformerUtils.parseSapAmount(source.getQuantity()));
@@ -64,7 +75,7 @@ public class BillingDocTransformer {
         return dto;
     }
 
-    private InvoiceStatus deriveStatus(ODataBillingDocument doc) {
+    private InvoiceStatus deriveStatus(ODataCIDocument doc) {
         // Reversed: a reversal document exists for this invoicing document
         String reversalDoc = doc.getCaInvcgReversalDocument();
         if (reversalDoc != null && !reversalDoc.isBlank()) {
@@ -72,7 +83,7 @@ public class BillingDocTransformer {
         }
 
         // Clearing status derived from item-level CAClearingDocumentNumber
-        List<ODataBillingLineItem> items = doc.getLineItems();
+        List<ODataCILineItem> items = doc.getLineItems();
         if (!items.isEmpty()) {
             long clearedCount = items.stream()
                     .filter(i -> i.getCaClearingDocumentNumber() != null

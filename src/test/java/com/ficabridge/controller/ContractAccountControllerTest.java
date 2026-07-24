@@ -37,7 +37,7 @@ class ContractAccountControllerTest {
     void getContractAccount_found_returns200WithDto() throws Exception {
         ContractAccountDTO dto = contractAccountDto("100200", "5678");
         InvoiceDTO invoice = new InvoiceDTO();
-        invoice.setBillingDocNumber("90001234");
+        invoice.setInvoiceNumber("90001234");
         invoice.setStatus(InvoiceStatus.OPEN);
         dto.setInvoices(List.of(invoice));
 
@@ -48,7 +48,7 @@ class ContractAccountControllerTest {
                 .andExpect(jsonPath("$.contractAccount", is("100200")))
                 .andExpect(jsonPath("$.businessPartner", is("5678")))
                 .andExpect(jsonPath("$.invoices", hasSize(1)))
-                .andExpect(jsonPath("$.invoices[0].billingDocNumber", is("90001234")));
+                .andExpect(jsonPath("$.invoices[0].invoiceNumber", is("90001234")));
     }
 
     @Test
@@ -79,7 +79,7 @@ class ContractAccountControllerTest {
     void getOverdue_returnsAccountsWithOverdueInvoices() throws Exception {
         ContractAccountDTO ca1 = contractAccountDto("100200", "5678");
         InvoiceDTO overdueInvoice = new InvoiceDTO();
-        overdueInvoice.setBillingDocNumber("90001234");
+        overdueInvoice.setInvoiceNumber("90001234");
         overdueInvoice.setStatus(InvoiceStatus.OVERDUE);
         ca1.setInvoices(List.of(overdueInvoice));
 

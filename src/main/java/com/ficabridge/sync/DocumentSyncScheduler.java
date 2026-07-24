@@ -121,7 +121,7 @@ public class DocumentSyncScheduler {
             boolean clearingDateChanged = !Objects.equals(transformed.getClearingDate(), entity.getClearingDate());
             if (statusChanged || clearingDateChanged) {
                 changes.add(new DocumentChange(
-                        entity.getBillingDocNumber(),
+                        entity.getInvoiceNumber(),
                         entity.getContractAccount(),
                         transformed.getStatus(),
                         transformed.getClearingDate()));

@@ -29,7 +29,7 @@ class InvoiceMapperTest {
 
         InvoiceDTO dto = invoiceMapper.toDto(entity);
 
-        assertThat(dto.getBillingDocNumber()).isEqualTo("90001001");
+        assertThat(dto.getInvoiceNumber()).isEqualTo("90001001");
         assertThat(dto.getContractAccount()).isEqualTo("200001");
         assertThat(dto.getBusinessPartner()).isEqualTo("100001");
         assertThat(dto.getStatus()).isEqualTo(InvoiceStatus.OPEN);
@@ -82,7 +82,7 @@ class InvoiceMapperTest {
     @Test
     void toEntity_mapsScalarFields_ignoresIdCreatedAtLineItems() {
         InvoiceDTO dto = new InvoiceDTO();
-        dto.setBillingDocNumber("90001001");
+        dto.setInvoiceNumber("90001001");
         dto.setContractAccount("200001");
         dto.setBusinessPartner("100001");
         dto.setStatus(InvoiceStatus.CLEARED);
@@ -92,7 +92,7 @@ class InvoiceMapperTest {
 
         InvoiceEntity entity = invoiceMapper.toEntity(dto);
 
-        assertThat(entity.getBillingDocNumber()).isEqualTo("90001001");
+        assertThat(entity.getInvoiceNumber()).isEqualTo("90001001");
         assertThat(entity.getStatus()).isEqualTo(InvoiceStatus.CLEARED);
         assertThat(entity.getOfficialDocumentNumber()).isEqualTo("ODN2025001001");
         assertThat(entity.getId()).isNull();
@@ -111,12 +111,12 @@ class InvoiceMapperTest {
     void toDtoList_multipleEntities_returnsAll() {
         InvoiceEntity e1 = invoiceEntity();
         InvoiceEntity e2 = invoiceEntity();
-        e2.setBillingDocNumber("90001002");
+        e2.setInvoiceNumber("90001002");
 
         List<InvoiceDTO> dtos = invoiceMapper.toDtoList(List.of(e1, e2));
 
         assertThat(dtos).hasSize(2);
-        assertThat(dtos.get(1).getBillingDocNumber()).isEqualTo("90001002");
+        assertThat(dtos.get(1).getInvoiceNumber()).isEqualTo("90001002");
     }
 
     // ── toDto(InvoiceLineItemEntity) ──────────────────────────────────────────
@@ -142,7 +142,7 @@ class InvoiceMapperTest {
 
     private InvoiceEntity invoiceEntity() {
         InvoiceEntity e = new InvoiceEntity();
-        e.setBillingDocNumber("90001001");
+        e.setInvoiceNumber("90001001");
         e.setContractAccount("200001");
         e.setBusinessPartner("100001");
         e.setStatus(InvoiceStatus.OPEN);

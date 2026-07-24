@@ -16,12 +16,12 @@ All APIs are standard SAP published services available on the
 |-------------------------------------------------------|---------------------------|----------|-------------------------------|---------------|
 | Contract Account (FI-CA)                              | API_CA_CONTRACTACCOUNT    | V2       | `ContractAccountClient`       | Implemented   |
 | FI-CA Document                                        | API_FICADOCUMENT          | V2       | `FicaDocumentClient`          | Implemented   |
-| CA Invoicing Document - Read                          | API_CAINVOICINGDOCUMENT   | **V4**   | `BillingDocumentClient`       | Implemented   |
+| CA Invoicing Document - Read                          | API_CAINVOICINGDOCUMENT   | **V4**   | `CIDocumentClient`       | Implemented   |
 | Business Partner                                      | API_BUSINESS_PARTNER      | V2       | —                             | Not implemented |
 | Contract Accounting Business Partner Invoice - Read   | API_CABUSPARTINVOICE      | **V4**   | —                             | Not implemented |
 
 > **Do not use `API_BILLING_DOCUMENT_SRV`** — that is the SD (Sales & Distribution) billing API
-> (OData V2, entity `BillingDocument`). It has a completely different entity structure and is
+> (OData V2, entity `CIDocument`). It has a completely different entity structure and is
 > unrelated to FI-CA / Convergent Invoicing.
 
 ---

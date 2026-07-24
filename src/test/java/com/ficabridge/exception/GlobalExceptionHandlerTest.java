@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(InvoiceController.class)
@@ -28,7 +29,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void resourceNotFound_returns404WithStructuredBody() throws Exception {
-        when(invoiceService.getByBillingDocNumber("MISSING"))
+        when(invoiceService.getByInvoiceNumber("MISSING"))
                 .thenThrow(new ResourceNotFoundException("Invoice not found: MISSING"));
 
         mockMvc.perform(get("/api/invoices/MISSING"))
@@ -41,7 +42,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void oDataClientError_returns502WithStructuredBody() throws Exception {
-        when(invoiceService.getByBillingDocNumber("DOC001"))
+        when(invoiceService.getByInvoiceNumber("DOC001"))
                 .thenThrow(new ODataClientException("HTTP 503 from SAP", 503));
 
         mockMvc.perform(get("/api/invoices/DOC001"))
@@ -93,5 +94,17 @@ class GlobalExceptionHandlerTest {
 
         mockMvc.perform(get("/api/invoices").param("status", "OPEN"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void unsupportedHttpMethod_returns405WithStructuredBody() throws Exception {
+        // /api/invoices is GET-only; POST triggers Spring's HttpRequestMethodNotSupportedException,
+        // which the ResponseEntityExceptionHandler base maps to 405 (previously swallowed into 500).
+        mockMvc.perform(post("/api/invoices"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.status", is(405)))
+                .andExpect(jsonPath("$.error", is("Method Not Allowed")))
+                .andExpect(jsonPath("$.message", notNullValue()))
+                .andExpect(jsonPath("$.timestamp", notNullValue()));
     }
 }

@@ -11,7 +11,7 @@ import java.util.Optional;
 
 public interface InvoiceRepository extends JpaRepository<InvoiceEntity, Long> {
 
-    Optional<InvoiceEntity> findByBillingDocNumber(String billingDocNumber);
+    Optional<InvoiceEntity> findByInvoiceNumber(String invoiceNumber);
 
     List<InvoiceEntity> findByContractAccount(String contractAccount);
 
@@ -36,5 +36,5 @@ public interface InvoiceRepository extends JpaRepository<InvoiceEntity, Long> {
 
     Page<InvoiceEntity> findByContractAccountAndStatusIn(String contractAccount, List<InvoiceStatus> statuses, Pageable pageable);
 
-    boolean existsByBillingDocNumber(String billingDocNumber);
+    boolean existsByInvoiceNumber(String invoiceNumber);
 }

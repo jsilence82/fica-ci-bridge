@@ -11,12 +11,12 @@ build, run, or test the project.
 ```
 wiremock/
 ├── mappings/                     # Request matchers — tell WireMock how to route requests
-│   ├── billing-document-list.json
-│   ├── billing-document-single.json
+│   ├── ci-document-list.json
+│   ├── ci-document-single.json
 │   ├── contract-account-single.json
 │   └── fica-document-list.json
 └── __files/                      # Response bodies — referenced by bodyFileName in mappings
-    ├── billing-document-response.json
+    ├── ci-document-response.json
     ├── contract-account-response.json
     └── fica-document-response.json
 ```
@@ -64,7 +64,7 @@ Each file in `wiremock/mappings/` defines one or more stub mappings. A mapping h
       "response": {
         "status": 200,
         "headers": { "Content-Type": "application/json" },
-        "bodyFileName": "billing-document-response.json"
+        "bodyFileName": "ci-document-response.json"
       }
     }
   ]
@@ -85,21 +85,21 @@ actual FI-CA field names and SAP data quirks (YYYYMMDD dates, zero-padded IDs, e
 WireMock is used at the **OData client layer**, not at the full-Spring-context integration
 layer — the two test suites in this project have different jobs and different fixtures:
 
-- **Client tests** (`BillingDocumentClientTest`, `ContractAccountClientTest`,
+- **Client tests** (`CIDocumentClientTest`, `ContractAccountClientTest`,
   `FicaDocumentClientTest`) exercise `client/` classes directly against a real WireMock server,
   using the JUnit 5 `@WireMockTest` extension (from `wiremock-junit5`, pulled in transitively by
   the `wiremock-spring-boot` dependency) with `WireMockRuntimeInfo` injected per test:
 
   ```java
   @WireMockTest
-  class BillingDocumentClientTest {
+  class CIDocumentClientTest {
 
       @BeforeEach
       void setUp(WireMockRuntimeInfo wmRuntimeInfo) {
           WebClient webClient = WebClient.builder()
                   .baseUrl(wmRuntimeInfo.getHttpBaseUrl())
                   .build();
-          client = new BillingDocumentClient(webClient, OBJECT_MAPPER, RateLimiter.ofDefaults("test"));
+          client = new CIDocumentClient(webClient, OBJECT_MAPPER, RateLimiter.ofDefaults("test"));
       }
 
       @Test
@@ -108,7 +108,7 @@ layer — the two test suites in this project have different jobs and different 
                   .withQueryParam("$filter", equalTo("ContractAccount eq '100200'"))
                   .willReturn(okJson(json)));
 
-          List<ODataBillingDocument> result = client.findByContractAccount("100200");
+          List<ODataCIDocument> result = client.findByContractAccount("100200");
           // ... assertions
       }
   }
@@ -153,14 +153,14 @@ To stub a new SAP OData endpoint:
 
 | SAP API Path | Stub File | Coverage |
 |---|---|---|
-| `GET .../cainvoicingdocument/0001/CAInvcgDocument?$filter=ContractAccount...` | billing-document-list.json | List by contract account |
-| `GET .../cainvoicingdocument/0001/CAInvcgDocument(CAInvoicingDocument='{id}')` | billing-document-single.json | Single by document number, with items expanded |
+| `GET .../cainvoicingdocument/0001/CAInvcgDocument?$filter=ContractAccount...` | ci-document-list.json | List by contract account |
+| `GET .../cainvoicingdocument/0001/CAInvcgDocument(CAInvoicingDocument='{id}')` | ci-document-single.json | Single by document number, with items expanded |
 | `GET /API_CA_CONTRACTACCOUNT/ContractAccount('{id}')` | contract-account-single.json | Single by VKONT |
 | `GET /API_FICADOCUMENT/FiCADocument?$filter=ContractAccount...` | fica-document-list.json | List by contract account |
 
 The full `CAInvcgDocument` path is
 `/sap/opu/odata4/sap/api_cainvoicingdocument/srvd_a2x/sap/cainvoicingdocument/0001/CAInvcgDocument`
-(truncated above for width — see `wiremock/mappings/billing-document-list.json` for the exact
+(truncated above for width — see `wiremock/mappings/ci-document-list.json` for the exact
 `urlPathPattern`).
 
 ---

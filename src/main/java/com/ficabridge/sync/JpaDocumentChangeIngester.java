@@ -14,7 +14,7 @@ import java.util.Optional;
 
 /**
  * Applies detected clearing-status changes to the invoice cache, matching on
- * {@code billingDocNumber} so the same document ingested twice updates rather than duplicates.
+ * {@code invoiceNumber} so the same document ingested twice updates rather than duplicates.
  * <p>
  * Net-new documents are out of scope for this ingester (discovery sync is separate work), so a
  * change whose invoice isn't in the cache is <b>skipped and logged</b> — deliberately not an insert,
@@ -36,7 +36,7 @@ class JpaDocumentChangeIngester implements DocumentChangeIngester {
         List<InvoiceEntity> updated = new ArrayList<>();
         int skipped = 0;
         for (DocumentChange change : changes) {
-            Optional<InvoiceEntity> found = invoiceRepository.findByBillingDocNumber(change.billingDocNumber());
+            Optional<InvoiceEntity> found = invoiceRepository.findByInvoiceNumber(change.invoiceNumber());
             if (found.isEmpty()) {
                 skipped++;
                 continue;

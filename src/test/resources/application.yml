@@ -8,6 +8,10 @@ spring:
     hibernate:
       ddl-auto: create-drop
     database-platform: org.hibernate.dialect.H2Dialect
+    # Match production (main application.yml): Open-Session-In-View OFF. This test file shadows the
+    # main one on the classpath, so without this line tests would run with OSIV on (Spring's default)
+    # and silently pass over LazyInitializationException that real requests hit.
+    open-in-view: false
   flyway:
     enabled: false
   # Mirrors the pagination defaults in src/main/resources/application.yml. Kept here because the

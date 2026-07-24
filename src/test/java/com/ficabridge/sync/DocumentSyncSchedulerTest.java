@@ -61,10 +61,10 @@ class DocumentSyncSchedulerTest {
         assertThat(changes).isEmpty();
     }
 
-    private static InvoiceEntity invoice(String billingDocNumber, String contractAccount,
+    private static InvoiceEntity invoice(String invoiceNumber, String contractAccount,
             String ficaDocNumber, InvoiceStatus status, LocalDate clearingDate) {
         InvoiceEntity entity = new InvoiceEntity();
-        entity.setBillingDocNumber(billingDocNumber);
+        entity.setInvoiceNumber(invoiceNumber);
         entity.setContractAccount(contractAccount);
         entity.setFicaDocNumber(ficaDocNumber);
         entity.setStatus(status);

@@ -11,7 +11,7 @@ import java.time.LocalDate;
  * Keyed by CAInvoicingDocument + CAInvcgDocItem (sequential item number).
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ODataBillingLineItem {
+public class ODataCILineItem {
 
     @JsonProperty("CAInvoicingDocument")
     private String caInvoicingDocument;
